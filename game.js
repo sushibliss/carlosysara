@@ -9,7 +9,7 @@
 const CONFIG = {
   // Archivos que subes al repo (carpeta /assets). Si faltan, salen marcadores.
   assets: {
-    novio:   "assets/novio.png",   // portada + puzzle
+    novio:   "assets/novio.jpg",   // portada + puzzle
     cigarro: "assets/Cigarro.png", // foto de cigarro real
     pollos:  ["assets/pollo1.png", "assets/pollo2.png", "assets/pollo3.png", "assets/pollo4.png"],
     novia:   "assets/novia.png",   // laberinto
