@@ -10,7 +10,7 @@ const CONFIG = {
   // Archivos que subes al repo (carpeta /assets). Si faltan, salen marcadores.
   assets: {
     novio:   "assets/novio.png",   // portada + puzzle
-    cigarro: "assets/cigarro.png", // foto de cigarro real
+    cigarro: "assets/Cigarro.png", // foto de cigarro real
     pollos:  ["assets/pollo1.png", "assets/pollo2.png", "assets/pollo3.png", "assets/pollo4.png"],
     novia:   "assets/novia.png",   // laberinto
     suegro:  "assets/suegro.png",  // laberinto
@@ -146,17 +146,19 @@ function screenWelcome() {
   btn.onclick = next;
   s.appendChild(btn);
 
-  // corazones flotantes
+  // corazones y emojis flotantes (muchos)
   const hearts = document.createElement("div");
   hearts.className = "hearts";
-  for (let i = 0; i < 12; i++) {
+  // más peso a los corazones, con algún detalle rural
+  const pool = ["❤️","💛","🤍","💕","💖","💗","💘","💞","❤️","💛","🌾","🌼","💍","🤍","💕"];
+  for (let i = 0; i < 28; i++) {
     const h = document.createElement("div");
     h.className = "heart";
-    h.textContent = randItem(["❤", "💛", "🤍", "🌾", "🌼"]);
+    h.textContent = randItem(pool);
     h.style.left = Math.random() * 100 + "%";
-    h.style.animationDuration = (6 + Math.random() * 6) + "s";
-    h.style.animationDelay = (-Math.random() * 8) + "s";
-    h.style.fontSize = (16 + Math.random() * 18) + "px";
+    h.style.animationDuration = (5 + Math.random() * 7) + "s";
+    h.style.animationDelay = (-Math.random() * 10) + "s";
+    h.style.fontSize = (14 + Math.random() * 22) + "px";
     hearts.appendChild(h);
   }
   game.appendChild(hearts);
@@ -380,20 +382,22 @@ function screenMaze() {
   s.innerHTML = `<p class="kicker">Prueba 4 de 7</p><h2>Camino al suegro</h2>
     <p class="hint">Guía a la novia hasta el suegro. Desliza o usa las flechas. El suegro espera (impaciente).</p>`;
 
-  // 1 = muro, 0 = libre. 9x9. Inicio (1,1) novia, meta esquina.
+  // 1 = muro, 0 = libre. 11x11. Inicio (1,1) novia, meta (9,9) suegro.
   const M = [
-    [1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,1,0,0,0,1],
-    [1,0,1,0,1,0,1,0,1],
-    [1,0,1,0,0,0,1,0,1],
-    [1,0,1,1,1,0,1,0,1],
-    [1,0,0,0,1,0,1,0,1],
-    [1,1,1,0,1,0,1,0,1],
-    [1,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,1,0,0,0,0,0,1],
+    [1,1,1,0,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,1,0,1],
+    [1,0,1,1,1,1,1,0,1,0,1],
+    [1,0,0,0,1,0,0,0,1,0,1],
+    [1,1,1,0,1,0,1,0,1,1,1],
+    [1,0,0,0,0,0,1,0,0,0,1],
+    [1,0,1,1,1,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1],
   ];
   const start = { r: 1, c: 1 };
-  const goal = { r: 7, c: 7 };
+  const goal = { r: 9, c: 9 };
   let pos = { ...start };
 
   const maze = document.createElement("div");
@@ -501,7 +505,7 @@ function screenDistancia() {
 function screenPong() {
   const s = makeScreen();
   s.innerHTML = `<p class="kicker">Prueba 6 de 7</p><h2>Pong nupcial</h2>
-    <p class="hint">Primero a ${CONFIG.pong.winScore}. Tú abajo (desliza), la máquina arriba. Demuestra reflejos de soltero.</p>
+    <p class="hint">Primero a ${CONFIG.pong.winScore}. Tú abajo (desliza), la máquina arriba. Pásale el anillo 💍.</p>
     <div class="score"><span id="aiScore">0</span> — <span id="meScore">0</span></div>`;
 
   const wrap = document.createElement("div");
@@ -518,16 +522,23 @@ function screenPong() {
   const W = 300, H = 400; cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
 
-  const padW = 70, padH = 12;
+  // fotos opcionales de los novios como palas
+  const imgNovio = new Image(); let hasNovio = false;
+  imgNovio.onload = () => hasNovio = true; imgNovio.src = CONFIG.assets.novio;
+  const imgNovia = new Image(); let hasNovia = false;
+  imgNovia.onload = () => hasNovia = true; imgNovia.src = CONFIG.assets.novia;
+
+  const padW = 84, padH = 16;
   let me = { x: W/2 - padW/2 }, ai = { x: W/2 - padW/2 };
+  const meTrail = [], aiTrail = []; // estelas
   let ball = resetBall(1);
   let meScore = 0, aiScore = 0, running = true;
 
   function resetBall(dir) {
-    return { x: W/2, y: H/2, vx: (Math.random()*2-1)*2.4, vy: dir * 3.2, r: 7 };
+    // más rápido que antes
+    return { x: W/2, y: H/2, vx: (Math.random()*2-1)*3.4, vy: dir * 5.2, r: 12, ang: 0 };
   }
 
-  // control táctil/ratón: mover pala inferior según X
   function setMeX(clientX) {
     const rect = cv.getBoundingClientRect();
     const rel = (clientX - rect.left) / rect.width * W;
@@ -535,27 +546,29 @@ function screenPong() {
   }
   cv.addEventListener("touchmove", e => { setMeX(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
   cv.addEventListener("touchstart", e => { setMeX(e.touches[0].clientX); }, { passive: true });
-  cv.addEventListener("mousemove", e => { if (e.buttons || true) setMeX(e.clientX); });
+  cv.addEventListener("mousemove", e => setMeX(e.clientX));
 
   function loop() {
     if (!running || current !== screens.indexOf(screenPong)) return;
-    // IA sencilla (con un poco de torpeza para que sea ganable)
+
+    // IA MÁS LENTA y torpe (más fácil de ganar)
     const target = ball.x - padW/2;
-    ai.x += Math.max(-3.2, Math.min(3.2, (target - ai.x) * 0.09));
+    ai.x += Math.max(-1.7, Math.min(1.7, (target - ai.x) * 0.05));
     ai.x = Math.min(W - padW, Math.max(0, ai.x));
 
-    ball.x += ball.vx; ball.y += ball.vy;
+    // estelas (guarda posiciones recientes)
+    meTrail.push(me.x); if (meTrail.length > 9) meTrail.shift();
+    aiTrail.push(ai.x); if (aiTrail.length > 9) aiTrail.shift();
+
+    ball.x += ball.vx; ball.y += ball.vy; ball.ang += 0.18;
     if (ball.x < ball.r || ball.x > W - ball.r) ball.vx *= -1;
 
-    // pala superior (IA)
     if (ball.y - ball.r < padH && ball.x > ai.x && ball.x < ai.x + padW && ball.vy < 0) {
-      ball.vy *= -1; ball.vx += (ball.x - (ai.x + padW/2)) * 0.05;
+      ball.vy *= -1; ball.vx += (ball.x - (ai.x + padW/2)) * 0.06;
     }
-    // pala inferior (jugador)
     if (ball.y + ball.r > H - padH && ball.x > me.x && ball.x < me.x + padW && ball.vy > 0) {
-      ball.vy *= -1; ball.vx += (ball.x - (me.x + padW/2)) * 0.05;
+      ball.vy *= -1; ball.vx += (ball.x - (me.x + padW/2)) * 0.06;
     }
-    // puntos
     if (ball.y < 0) { meScore++; meScoreEl.textContent = meScore; ball = resetBall(1); checkWin(); }
     if (ball.y > H) { aiScore++; aiScoreEl.textContent = aiScore; ball = resetBall(-1); }
 
@@ -566,21 +579,58 @@ function screenPong() {
   function checkWin() {
     if (meScore >= CONFIG.pong.winScore) {
       running = false;
-      ok(fb, "¡Reflejos de campeón! 🏓");
+      ok(fb, "¡Reflejos de campeón! 💍");
       setTimeout(next, 1000);
     }
   }
 
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawPaddle(x, y, color, trail, img, hasImg) {
+    // estela
+    trail.forEach((tx, i) => {
+      const a = (i + 1) / trail.length * 0.28;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = color;
+      roundRect(tx, y, padW, padH, 8); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    // pala
+    if (hasImg) {
+      ctx.save(); roundRect(x, y, padW, padH, 8); ctx.clip();
+      ctx.drawImage(img, x, y, padW, padH);
+      ctx.restore();
+      ctx.lineWidth = 2; ctx.strokeStyle = color; roundRect(x, y, padW, padH, 8); ctx.stroke();
+    } else {
+      const g = ctx.createLinearGradient(x, y, x, y + padH);
+      g.addColorStop(0, "#fff6"); g.addColorStop(.5, color); g.addColorStop(1, "#0003");
+      ctx.fillStyle = g; roundRect(x, y, padW, padH, 8); ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.stroke();
+    }
+  }
+
   function draw() {
-    ctx.clearRect(0,0,W,H);
+    ctx.clearRect(0, 0, W, H);
     // línea central
-    ctx.strokeStyle = "rgba(255,255,255,.25)"; ctx.setLineDash([6,8]);
-    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke(); ctx.setLineDash([]);
-    // palas
-    ctx.fillStyle = "#c9a14a"; ctx.fillRect(ai.x, 0, padW, padH);
-    ctx.fillStyle = "#b5553f"; ctx.fillRect(me.x, H - padH, padW, padH);
-    // bola
-    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.setLineDash([6, 8]);
+    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke(); ctx.setLineDash([]);
+    // palas (novia arriba = IA, novio abajo = jugador)
+    drawPaddle(ai.x, 2, "#c9a14a", aiTrail, imgNovia, hasNovia);
+    drawPaddle(me.x, H - padH - 2, "#b5553f", meTrail, imgNovio, hasNovio);
+    // bola = anillo 💍
+    ctx.save();
+    ctx.translate(ball.x, ball.y); ctx.rotate(ball.ang);
+    ctx.font = (ball.r * 2.4) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("💍", 0, 1);
+    ctx.restore();
   }
 
   requestAnimationFrame(loop);
@@ -625,45 +675,56 @@ function screenChivi() {
    ========================================================= */
 function finishGame() {
   setProgress();
-  shatterScreen(() => showFinal());
+  // la cuenta atrás ya queda DETRÁS; los trozos caen y la van descubriendo
+  showFinal();
+  shatterScreen();
 }
 
-function shatterScreen(done) {
+function shatterScreen() {
   const layer = $("#shatter");
   layer.style.display = "block";
   layer.innerHTML = "";
-  const cols = 6, rows = 9;
+  const cols = 7, rows = 11;
   const vw = window.innerWidth, vh = window.innerHeight;
   const tw = vw / cols, th = vh / rows;
+
+  // paleta festiva de boda
+  const palette = [
+    ["#b5553f", "#9a4632"], ["#c9a14a", "#a87f2c"], ["#7a8b53", "#5f6e40"],
+    ["#e08aa0", "#c25f7c"], ["#6fa8c7", "#3f7d9c"], ["#e6b85c", "#caa23f"],
+    ["#a98bc4", "#7d5fa0"], ["#f0e6d2", "#d9c9a6"],
+  ];
 
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const shard = document.createElement("div");
     shard.className = "shard";
     shard.style.left = c * tw + "px";
     shard.style.top = r * th + "px";
-    shard.style.width = tw + "px";
-    shard.style.height = th + "px";
-    // el trozo "copia" el ambiente del juego
-    shard.style.background = "linear-gradient(135deg, #f6efe2, #e7dcc4)";
-    shard.style.boxShadow = "inset 0 0 0 1px rgba(58,47,37,.12)";
+    shard.style.width = (tw + 1) + "px";
+    shard.style.height = (th + 1) + "px";
+    const col = palette[(r * cols + c) % palette.length];
+    shard.style.background = `linear-gradient(135deg, ${col[0]}, ${col[1]})`;
+    shard.style.boxShadow = "inset 0 0 0 1px rgba(255,255,255,.25), inset 0 0 14px rgba(0,0,0,.15)";
+
     layer.appendChild(shard);
 
-    const dx = (Math.random() * 2 - 1) * 160;
-    const rot = (Math.random() * 2 - 1) * 90;
-    const delay = (r * 40) + Math.random() * 120;
-    const dur = 700 + Math.random() * 500;
+    const dx = (Math.random() * 2 - 1) * 220;
+    const rot = (Math.random() * 2 - 1) * 160;
+    const delay = (r * 110) + Math.random() * 220;   // caen por filas, más escalonado
+    const dur = 1700 + Math.random() * 1100;          // MÁS LENTO
     shard.animate([
-      { transform: "translate(0,0) rotate(0)", opacity: 1 },
-      { transform: `translate(${dx}px, ${vh + 200}px) rotate(${rot}deg)`, opacity: 1, offset: .9 },
-      { transform: `translate(${dx}px, ${vh + 260}px) rotate(${rot}deg)`, opacity: 0 },
-    ], { duration: dur, delay, easing: "cubic-bezier(.45,.05,.6,1)", fill: "forwards" });
+      { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1 },
+      { transform: `translate(${dx * .5}px, ${vh * .35}px) rotate(${rot * .5}deg) scale(.96)`, opacity: 1, offset: .55 },
+      { transform: `translate(${dx}px, ${vh + 240}px) rotate(${rot}deg) scale(.85)`, opacity: 0 },
+    ], { duration: dur, delay, easing: "cubic-bezier(.33,0,.67,1)", fill: "forwards" });
   }
   // ocultar el juego de fondo
   game.style.opacity = 0;
   $("#progress").style.display = "none";
   $("#skipBtn").style.display = "none";
 
-  setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; done(); }, 1500);
+  // limpia la capa cuando ya han caído todos
+  setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; }, 3400);
 }
 
 function showFinal() {
