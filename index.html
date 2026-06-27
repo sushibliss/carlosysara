@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#f6efe2" />
+  <title>El soltero en peligro de extinción</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Botón SKIP (modo pruebas) -->
+  <button id="skipBtn" class="skip-btn" title="Saltar (modo pruebas)">SKIP ⏭</button>
+
+  <!-- Barra de progreso -->
+  <div id="progress" class="progress"><div id="progressBar" class="progress-bar"></div></div>
+
+  <!-- Contenedor del juego -->
+  <main id="game" class="game"></main>
+
+  <!-- Capa para el efecto de rotura de pantalla -->
+  <div id="shatter" class="shatter" aria-hidden="true"></div>
+
+  <script src="game.js"></script>
+</body>
+</html>
