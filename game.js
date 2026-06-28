@@ -11,7 +11,7 @@ const CONFIG = {
   assets: {
     novio:   "assets/novio.jpg",   // portada + puzzle
     cigarro: "assets/Cigarro.png", // foto de cigarro real
-    pollos:  ["assets/pollo1.png", "assets/pollo2.png", "assets/pollo3.png", "assets/pollo4.png"],
+    pollos:  ["assets/pollo1.png", "assets/pollo2.png", "assets/pollo3.png", "assets/pollo4.png", "assets/pollo5.png", "assets/pollo6.png"],
     novia:   "assets/novia.png",   // laberinto
     suegro:  "assets/suegro.png",  // laberinto
     cancion: "assets/cancion.mp3", // canción final de los novios
@@ -322,56 +322,77 @@ function screenCigarro() {
    ========================================================= */
 function screenPollos() {
   const s = makeScreen();
+  const TOTAL = 6;
   s.innerHTML = `<p class="kicker">Prueba 3 de 7</p><h2>Sexador de pollos</h2>
-    <p class="hint">Macho o hembra. Tú decides. La naturaleza ya ha decidido (en secreto).</p>`;
+    <p class="hint">De uno en uno. Acierta los ${TOTAL} seguidos. Si fallas uno… vuelta al primer pollo. 🐔</p>`;
 
-  // verdad aleatoria por intento
-  const truth = Array.from({ length: 4 }, () => (Math.random() < 0.5 ? "M" : "H"));
-  const answers = [null, null, null, null];
+  let idx = 0;
+  let truth = makeTruth();           // verdad aleatoria, se regenera al fallar
+  function makeTruth() { return Array.from({ length: TOTAL }, () => (Math.random() < 0.5 ? "M" : "H")); }
 
-  const grid = document.createElement("div");
-  grid.className = "pollos";
-  s.appendChild(grid);
+  // puntitos de progreso
+  const dots = document.createElement("div");
+  dots.className = "pollo-dots";
+  s.appendChild(dots);
 
-  for (let i = 0; i < 4; i++) {
-    const cell = document.createElement("div");
-    cell.className = "pollo";
-    const pic = imgOr(CONFIG.assets.pollos[i], "Pollo " + (i + 1), "🐔", "pic");
-    if (pic.tagName === "IMG") pic.classList.add("pic");
-    cell.appendChild(pic);
+  const card = document.createElement("div");
+  card.className = "card pollo-card";
+  s.appendChild(card);
+
+  const fb = feedbackEl(s);
+
+  function renderDots() {
+    dots.innerHTML = "";
+    for (let i = 0; i < TOTAL; i++) {
+      const d = document.createElement("span");
+      d.className = "pollo-dot" + (i < idx ? " done" : (i === idx ? " now" : ""));
+      d.textContent = i < idx ? "🥚" : "•";
+      dots.appendChild(d);
+    }
+  }
+
+  function renderPollo() {
+    renderDots();
+    card.innerHTML = "";
+    const label = document.createElement("p");
+    label.className = "tiny"; label.textContent = `Pollo ${idx + 1} de ${TOTAL}`;
+    card.appendChild(label);
+
+    const pic = imgOr(CONFIG.assets.pollos[idx], "Pollo " + (idx + 1), "🐔", "pollo-pic");
+    if (pic.tagName === "IMG") pic.classList.add("pollo-pic");
+    card.appendChild(pic);
 
     const btns = document.createElement("div");
     btns.className = "sexbtns";
-    ["M", "H"].forEach(v => {
+    [["M", "Macho ♂"], ["H", "Hembra ♀"]].forEach(([v, txt]) => {
       const b = document.createElement("button");
-      b.textContent = v === "M" ? "Macho ♂" : "Hembra ♀";
-      b.onclick = () => {
-        answers[i] = v;
-        btns.querySelectorAll("button").forEach(x => x.classList.remove("on"));
-        b.classList.add("on");
-      };
+      b.textContent = txt;
+      b.onclick = () => answer(v);
       btns.appendChild(b);
     });
-    cell.appendChild(btns);
-    grid.appendChild(cell);
+    card.appendChild(btns);
   }
 
-  const fb = feedbackEl(s);
-  const btn = document.createElement("button");
-  btn.className = "btn"; btn.textContent = "Veredicto final 🐣";
-  s.appendChild(btn);
-
-  btn.onclick = () => {
-    if (answers.some(a => a === null)) { fb.className = "feedback bad"; fb.textContent = "Decídete con los cuatro, valiente."; return; }
-    if (answers.every((a, i) => a === truth[i])) {
-      ok(fb, "¡Ojo clínico! Te contratan en la granja. 🐓");
-      setTimeout(next, 900);
+  function answer(v) {
+    if (v === truth[idx]) {
+      idx++;
+      if (idx >= TOTAL) {
+        renderDots();
+        ok(fb, "¡Ojo clínico! Te contratan en la granja. 🐓");
+        setTimeout(next, 1000);
+      } else {
+        ok(fb, "¡Bien! Siguiente pollo…");
+        setTimeout(() => { fb.textContent = ""; fb.className = "feedback"; renderPollo(); }, 500);
+      }
     } else {
-      // regenerar verdad para que cada intento sea una nueva lotería
-      for (let i = 0; i < 4; i++) truth[i] = Math.random() < 0.5 ? "M" : "H";
+      // fallo: vuelta al principio con nueva lotería
+      idx = 0; truth = makeTruth();
       fail(fb);
+      setTimeout(renderPollo, 700);
     }
-  };
+  }
+
+  renderPollo();
 }
 
 /* =========================================================
@@ -379,32 +400,21 @@ function screenPollos() {
    ========================================================= */
 function screenMaze() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 4 de 7</p><h2>Camino al suegro</h2>
-    <p class="hint">Guía a la novia hasta el suegro. Desliza o usa las flechas. El suegro espera (impaciente).</p>`;
+  s.innerHTML = `<p class="kicker">Prueba 4 de 7</p><h2>Camino al suegro (con resaca)</h2>
+    <p class="hint">La novia va piripi 🥴. Los controles… digamos que “interpretan” tus órdenes. Llévala hasta el suegro como puedas.</p>`;
 
-  // 1 = muro, 0 = libre. 11x11. Inicio (1,1) novia, meta (9,9) suegro.
-  const M = [
-    [1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,1,0,0,0,0,0,1],
-    [1,1,1,0,1,0,1,1,1,0,1],
-    [1,0,0,0,0,0,0,0,1,0,1],
-    [1,0,1,1,1,1,1,0,1,0,1],
-    [1,0,0,0,1,0,0,0,1,0,1],
-    [1,1,1,0,1,0,1,0,1,1,1],
-    [1,0,0,0,0,0,1,0,0,0,1],
-    [1,0,1,1,1,1,1,1,1,0,1],
-    [1,0,0,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1],
-  ];
+  // genera un laberinto perfecto (siempre tiene solución) — N impar
+  const N = 13;
+  const M = genMaze(N);
   const start = { r: 1, c: 1 };
-  const goal = { r: 9, c: 9 };
+  const goal = { r: N - 2, c: N - 2 };
   let pos = { ...start };
+  let busy = false; // pequeño bloqueo durante el "tropiezo"
 
   const maze = document.createElement("div");
   maze.className = "maze";
-  const N = M.length;
   maze.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
-  maze.style.width = "min(86vw, 360px)";
+  maze.style.width = "min(90vw, 380px)";
   s.appendChild(maze);
 
   const fb = feedbackEl(s);
@@ -414,27 +424,55 @@ function screenMaze() {
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
       const cell = document.createElement("div");
       cell.className = "cell" + (M[r][c] ? " wall" : "");
-      if (r === goal.r && c === goal.c) cell.appendChild(token(CONFIG.assets.suegro, "👴"));
-      if (r === pos.r && c === pos.c) cell.appendChild(token(CONFIG.assets.novia, "👰"));
+      if (r === goal.r && c === goal.c) cell.appendChild(token(CONFIG.assets.suegro, "👴", false));
+      if (r === pos.r && c === pos.c) cell.appendChild(token(CONFIG.assets.novia, "🥴", true));
       maze.appendChild(cell);
     }
   }
-  function token(src, emoji) {
-    const t = document.createElement("div"); t.className = "tok";
+  function token(src, emoji, drunk) {
+    const t = document.createElement("div"); t.className = "tok" + (drunk ? " drunk" : "");
     const im = imgOr(src, "ficha", emoji);
     if (im.tagName !== "IMG") { im.className = "ph"; im.textContent = emoji; im.style.background = "transparent"; }
     t.appendChild(im);
     return t;
   }
-  function move(dr, dc) {
+
+  // CONTROLES BORRACHOS: la intención se "tuerce" a menudo
+  function drunkify(dr, dc) {
+    const roll = Math.random();
+    if (roll < 0.22) return [-dc, dr];        // gira 90° a un lado (se va de lado)
+    if (roll < 0.38) return [dc, -dr];        // gira 90° al otro lado
+    if (roll < 0.50) return [-dr, -dc];       // dirección opuesta (resbalón)
+    if (roll < 0.58) return [0, 0];           // se queda clavada (hipo)
+    return [dr, dc];                          // ~42%: por fin obedece
+  }
+
+  function tryStep(dr, dc) {
     const nr = pos.r + dr, nc = pos.c + dc;
-    if (nr < 0 || nc < 0 || nr >= N || nc >= N || M[nr][nc]) return;
+    if (nr < 0 || nc < 0 || nr >= N || nc >= N || M[nr][nc]) return false;
     pos = { r: nr, c: nc };
+    return true;
+  }
+
+  function move(dr, dc) {
+    if (busy) return;
+    let [adr, adc] = drunkify(dr, dc);
+    if (adr === 0 && adc === 0) { hiccup(); return; }
+    const moved = tryStep(adr, adc);
+    // a veces da un traspié extra en la misma dirección
+    if (moved && Math.random() < 0.35) tryStep(adr, adc);
     render();
+    if (moved && (adr !== dr || adc !== dc)) hiccup();
     if (pos.r === goal.r && pos.c === goal.c) {
-      ok(fb, "¡Llegaste al suegro! Ahora sonríe y aguanta. 👴💪");
-      setTimeout(next, 1000);
+      ok(fb, "¡Llegó al suegro (de milagro)! Ahora sonríe y disimula. 👴🍺");
+      setTimeout(next, 1100);
     }
+  }
+  function hiccup() {
+    busy = true;
+    fb.className = "feedback bad";
+    fb.textContent = randItem(["¡hip! 🥴", "uy, por ahí no…", "el suelo se mueve 🍺", "¿dónde está la puerta?"]);
+    setTimeout(() => { busy = false; if (fb.textContent && !fb.classList.contains("ok")) { fb.textContent = ""; fb.className = "feedback"; } }, 280);
   }
 
   // D-pad
@@ -464,7 +502,43 @@ function screenMaze() {
   window.__mazeKey = (e) => { const map = { ArrowUp:[-1,0], ArrowDown:[1,0], ArrowLeft:[0,-1], ArrowRight:[0,1] }; if (map[e.key]) { e.preventDefault(); move(...map[e.key]); } };
   window.addEventListener("keydown", window.__mazeKey);
 
+  // decoración: emojis de fiesta flotando
+  const party = document.createElement("div");
+  party.className = "hearts";
+  const drunkPool = ["🍺","🍻","🥴","🤮","🥂","🍷","🍾","💫","🤢"];
+  for (let i = 0; i < 16; i++) {
+    const h = document.createElement("div");
+    h.className = "heart";
+    h.textContent = randItem(drunkPool);
+    h.style.left = Math.random() * 100 + "%";
+    h.style.animationDuration = (6 + Math.random() * 7) + "s";
+    h.style.animationDelay = (-Math.random() * 10) + "s";
+    h.style.fontSize = (16 + Math.random() * 18) + "px";
+    party.appendChild(h);
+  }
+  game.appendChild(party);
+
   render();
+}
+
+// generador de laberinto perfecto (recursive backtracker). N impar.
+function genMaze(N) {
+  const M = Array.from({ length: N }, () => Array(N).fill(1));
+  function carve(r, c) {
+    M[r][c] = 0;
+    const dirs = [[0, 2], [0, -2], [2, 0], [-2, 0]];
+    shuffle(dirs);
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr > 0 && nc > 0 && nr < N - 1 && nc < N - 1 && M[nr][nc] === 1) {
+        M[r + dr / 2][c + dc / 2] = 0;
+        carve(nr, nc);
+      }
+    }
+  }
+  carve(1, 1);
+  M[N - 2][N - 2] = 0; // asegura la meta abierta
+  return M;
 }
 
 /* =========================================================
@@ -684,37 +758,46 @@ function shatterScreen() {
   const layer = $("#shatter");
   layer.style.display = "block";
   layer.innerHTML = "";
-  const cols = 7, rows = 11;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const tw = vw / cols, th = vh / rows;
 
-  // paleta festiva de boda
-  const palette = [
-    ["#b5553f", "#9a4632"], ["#c9a14a", "#a87f2c"], ["#7a8b53", "#5f6e40"],
-    ["#e08aa0", "#c25f7c"], ["#6fa8c7", "#3f7d9c"], ["#e6b85c", "#caa23f"],
-    ["#a98bc4", "#7d5fa0"], ["#f0e6d2", "#d9c9a6"],
-  ];
+  // troceamos la PANTALLA TAL Y COMO ESTÁ (clonando el contenido del juego)
+  const rect = game.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const cols = 6, rows = 9;
+  const tw = rect.width / cols, th = rect.height / rows;
+  const pageBg = getComputedStyle(document.body).backgroundColor || "#f6efe2";
 
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const shard = document.createElement("div");
     shard.className = "shard";
-    shard.style.left = c * tw + "px";
-    shard.style.top = r * th + "px";
+    shard.style.left = (rect.left + c * tw) + "px";
+    shard.style.top = (rect.top + r * th) + "px";
     shard.style.width = (tw + 1) + "px";
     shard.style.height = (th + 1) + "px";
-    const col = palette[(r * cols + c) % palette.length];
-    shard.style.background = `linear-gradient(135deg, ${col[0]}, ${col[1]})`;
-    shard.style.boxShadow = "inset 0 0 0 1px rgba(255,255,255,.25), inset 0 0 14px rgba(0,0,0,.15)";
+    shard.style.overflow = "hidden";
+    shard.style.background = pageBg;
+    shard.style.boxShadow = "0 0 0 1px rgba(58,47,37,.10), 0 6px 14px rgba(0,0,0,.12)";
 
+    // clon del juego, recolocado para que cada trozo muestre su porción
+    const clone = game.cloneNode(true);
+    clone.style.position = "absolute";
+    clone.style.left = (-(c * tw)) + "px";
+    clone.style.top = (-(r * th)) + "px";
+    clone.style.width = rect.width + "px";
+    clone.style.height = rect.height + "px";
+    clone.style.maxWidth = "none";
+    clone.style.margin = "0";
+    clone.style.opacity = "1";
+    clone.style.boxSizing = "border-box";
+    shard.appendChild(clone);
     layer.appendChild(shard);
 
-    const dx = (Math.random() * 2 - 1) * 220;
-    const rot = (Math.random() * 2 - 1) * 160;
-    const delay = (r * 110) + Math.random() * 220;   // caen por filas, más escalonado
-    const dur = 1700 + Math.random() * 1100;          // MÁS LENTO
+    const dx = (Math.random() * 2 - 1) * 200;
+    const rot = (Math.random() * 2 - 1) * 150;
+    const delay = (r * 120) + Math.random() * 200;   // caen por filas, escalonado
+    const dur = 1800 + Math.random() * 1100;          // lento
     shard.animate([
       { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1 },
-      { transform: `translate(${dx * .5}px, ${vh * .35}px) rotate(${rot * .5}deg) scale(.96)`, opacity: 1, offset: .55 },
+      { transform: `translate(${dx * .5}px, ${vh * .32}px) rotate(${rot * .5}deg) scale(.97)`, opacity: 1, offset: .55 },
       { transform: `translate(${dx}px, ${vh + 240}px) rotate(${rot}deg) scale(.85)`, opacity: 0 },
     ], { duration: dur, delay, easing: "cubic-bezier(.33,0,.67,1)", fill: "forwards" });
   }
@@ -724,7 +807,7 @@ function shatterScreen() {
   $("#skipBtn").style.display = "none";
 
   // limpia la capa cuando ya han caído todos
-  setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; }, 3400);
+  setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; }, 3500);
 }
 
 function showFinal() {
