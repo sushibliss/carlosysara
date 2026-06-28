@@ -70,7 +70,7 @@ const screens = [
   screenPuzzle,    // 1
   screenCigarro,   // 2
   screenPollos,    // 3
-  screenMaze,      // 4
+  screenObstacles, // 4
   screenDistancia, // 5
   screenPong,      // 6
   screenChivi,     // 7
@@ -396,150 +396,199 @@ function screenPollos() {
 }
 
 /* =========================================================
-   P4 — LABERINTO: la novia llega al suegro
+   P4 — OBSTÁCULOS: lleva a la novia borracha hasta el suegro
+   La gracia está en controlar el tambaleo (inercia + bandazos).
    ========================================================= */
-function screenMaze() {
+function screenObstacles() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 4 de 7</p><h2>Camino al suegro (con resaca)</h2>
-    <p class="hint">La novia va piripi 🥴. Los controles… digamos que “interpretan” tus órdenes. Llévala hasta el suegro como puedas.</p>`;
+  s.innerHTML = `<p class="kicker">Prueba 4 de 7</p><h2>Llévala con el suegro 🥴</h2>
+    <p class="hint">Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva los obstáculos 🛢️ y a los enemigos 👵💃🐕 y llega arriba con el suegro 👴.</p>`;
 
-  // genera un laberinto perfecto (siempre tiene solución) — N impar
-  const N = 13;
-  const M = genMaze(N);
-  const start = { r: 1, c: 1 };
-  const goal = { r: N - 2, c: N - 2 };
-  let pos = { ...start };
-  let busy = false; // pequeño bloqueo durante el "tropiezo"
-
-  const maze = document.createElement("div");
-  maze.className = "maze";
-  maze.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
-  maze.style.width = "min(90vw, 380px)";
-  s.appendChild(maze);
-
+  const wrap = document.createElement("div");
+  wrap.className = "pong-wrap";
+  const cv = document.createElement("canvas");
+  cv.id = "arena";
+  wrap.appendChild(cv);
+  s.appendChild(wrap);
   const fb = feedbackEl(s);
 
-  function render() {
-    maze.innerHTML = "";
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-      const cell = document.createElement("div");
-      cell.className = "cell" + (M[r][c] ? " wall" : "");
-      if (r === goal.r && c === goal.c) cell.appendChild(token(CONFIG.assets.suegro, "👴", false));
-      if (r === pos.r && c === pos.c) cell.appendChild(token(CONFIG.assets.novia, "🥴", true));
-      maze.appendChild(cell);
+  // fotos opcionales
+  const imgNovia = new Image(); let hasNovia = false;
+  imgNovia.onload = () => hasNovia = true; imgNovia.src = CONFIG.assets.novia;
+  const imgSuegro = new Image(); let hasSuegro = false;
+  imgSuegro.onload = () => hasSuegro = true; imgSuegro.src = CONFIG.assets.suegro;
+
+  const W = 320, H = 460; cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+
+  const start = { x: W / 2, y: H - 36 };
+  const player = { x: start.x, y: start.y, vx: 0, vy: 0, r: 16 };
+  const goal = { x: W / 2, y: 38, r: 22 };
+  const trail = [];
+  let tropiezos = 0, running = true, won = false;
+
+  // obstáculos fijos
+  const obstacles = [
+    { x: 80,  y: 150, r: 20, e: "🛢️" },
+    { x: 240, y: 150, r: 20, e: "🪑" },
+    { x: 160, y: 230, r: 22, e: "🤮" },
+    { x: 70,  y: 320, r: 20, e: "🚧" },
+    { x: 250, y: 320, r: 20, e: "🛢️" },
+  ];
+  // enemigos que se mueven (lentos, rebotan en paredes)
+  const enemies = [
+    { x: 160, y: 110, vx: 1.3, vy: 0.0, r: 18, e: "👵" },
+    { x: 60,  y: 250, vx: 0.0, vy: 1.2, r: 18, e: "💃" },
+    { x: 260, y: 250, vx: -1.1, vy: 0.9, r: 18, e: "🐕" },
+  ];
+
+  // objetivo de control (donde toca el jugador)
+  let target = null;
+  function setTarget(clientX, clientY) {
+    const rect = cv.getBoundingClientRect();
+    target = {
+      x: (clientX - rect.left) / rect.width * W,
+      y: (clientY - rect.top) / rect.height * H,
+    };
+  }
+  cv.addEventListener("touchstart", e => { setTarget(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  cv.addEventListener("touchmove",  e => { setTarget(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+  cv.addEventListener("touchend",   () => { target = null; });
+  cv.addEventListener("mousedown",  e => setTarget(e.clientX, e.clientY));
+  cv.addEventListener("mousemove",  e => { if (e.buttons) setTarget(e.clientX, e.clientY); });
+  cv.addEventListener("mouseup",    () => { target = null; });
+  // teclado (escritorio): fija un objetivo en esa dirección
+  window.__arenaKey && window.removeEventListener("keydown", window.__arenaKey);
+  window.__arenaKey = (e) => {
+    const m = { ArrowUp: [0,-60], ArrowDown:[0,60], ArrowLeft:[-60,0], ArrowRight:[60,0] };
+    if (m[e.key]) { e.preventDefault(); target = { x: player.x + m[e.key][0], y: player.y + m[e.key][1] }; }
+  };
+  window.addEventListener("keydown", window.__arenaKey);
+
+  let t0 = performance.now();
+  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+  function respawn(msg) {
+    tropiezos++;
+    player.x = start.x; player.y = start.y; player.vx = 0; player.vy = 0;
+    trail.length = 0;
+    fb.className = "feedback bad"; fb.textContent = msg;
+  }
+
+  function loop(now) {
+    if (!running || current !== screens.indexOf(screenObstacles)) return;
+    const t = now - t0;
+
+    // EMPUJE BORRACHO: la dirección de control se tuerce con un vaivén
+    if (target) {
+      let dx = target.x - player.x, dy = target.y - player.y;
+      const d = Math.hypot(dx, dy) || 1;
+      dx /= d; dy /= d;
+      const wobble = Math.sin(t * 0.004) * 0.6 + (Math.random() - 0.5) * 0.3; // ±~35°
+      const cos = Math.cos(wobble), sin = Math.sin(wobble);
+      const rx = dx * cos - dy * sin, ry = dx * sin + dy * cos;
+      player.vx += rx * 0.5; player.vy += ry * 0.5;
     }
-  }
-  function token(src, emoji, drunk) {
-    const t = document.createElement("div"); t.className = "tok" + (drunk ? " drunk" : "");
-    const im = imgOr(src, "ficha", emoji);
-    if (im.tagName !== "IMG") { im.className = "ph"; im.textContent = emoji; im.style.background = "transparent"; }
-    t.appendChild(im);
-    return t;
-  }
+    // bandazos aleatorios + algún tropiezo gordo
+    player.vx += (Math.random() - 0.5) * 0.7;
+    player.vy += (Math.random() - 0.5) * 0.7;
+    if (Math.random() < 0.012) { player.vx += (Math.random() - 0.5) * 6; player.vy += (Math.random() - 0.5) * 6; }
 
-  // CONTROLES BORRACHOS: la intención se "tuerce" a menudo
-  function drunkify(dr, dc) {
-    const roll = Math.random();
-    if (roll < 0.22) return [-dc, dr];        // gira 90° a un lado (se va de lado)
-    if (roll < 0.38) return [dc, -dr];        // gira 90° al otro lado
-    if (roll < 0.50) return [-dr, -dc];       // dirección opuesta (resbalón)
-    if (roll < 0.58) return [0, 0];           // se queda clavada (hipo)
-    return [dr, dc];                          // ~42%: por fin obedece
-  }
+    // inercia (mucha = cuesta frenar)
+    player.vx *= 0.90; player.vy *= 0.90;
+    // límite de velocidad
+    const sp = Math.hypot(player.vx, player.vy), MAX = 3.4;
+    if (sp > MAX) { player.vx *= MAX / sp; player.vy *= MAX / sp; }
 
-  function tryStep(dr, dc) {
-    const nr = pos.r + dr, nc = pos.c + dc;
-    if (nr < 0 || nc < 0 || nr >= N || nc >= N || M[nr][nc]) return false;
-    pos = { r: nr, c: nc };
-    return true;
-  }
+    player.x += player.vx; player.y += player.vy;
 
-  function move(dr, dc) {
-    if (busy) return;
-    let [adr, adc] = drunkify(dr, dc);
-    if (adr === 0 && adc === 0) { hiccup(); return; }
-    const moved = tryStep(adr, adc);
-    // a veces da un traspié extra en la misma dirección
-    if (moved && Math.random() < 0.35) tryStep(adr, adc);
-    render();
-    if (moved && (adr !== dr || adc !== dc)) hiccup();
-    if (pos.r === goal.r && pos.c === goal.c) {
-      ok(fb, "¡Llegó al suegro (de milagro)! Ahora sonríe y disimula. 👴🍺");
-      setTimeout(next, 1100);
-    }
-  }
-  function hiccup() {
-    busy = true;
-    fb.className = "feedback bad";
-    fb.textContent = randItem(["¡hip! 🥴", "uy, por ahí no…", "el suelo se mueve 🍺", "¿dónde está la puerta?"]);
-    setTimeout(() => { busy = false; if (fb.textContent && !fb.classList.contains("ok")) { fb.textContent = ""; fb.className = "feedback"; } }, 280);
-  }
+    // paredes (rebote suave)
+    if (player.x < player.r) { player.x = player.r; player.vx *= -0.5; }
+    if (player.x > W - player.r) { player.x = W - player.r; player.vx *= -0.5; }
+    if (player.y < player.r) { player.y = player.r; player.vy *= -0.5; }
+    if (player.y > H - player.r) { player.y = H - player.r; player.vy *= -0.5; }
 
-  // D-pad
-  const dpad = document.createElement("div");
-  dpad.className = "dpad";
-  const layout = [["sp","↑","sp"],["←","sp","→"],["sp","↓","sp"]];
-  const dirs = { "↑":[-1,0], "↓":[1,0], "←":[0,-1], "→":[0,1] };
-  layout.flat().forEach(k => {
-    const b = document.createElement("button");
-    if (k === "sp") { b.className = "sp"; }
-    else { b.textContent = k; b.onclick = () => move(...dirs[k]); }
-    dpad.appendChild(b);
-  });
-  s.appendChild(dpad);
+    // estela
+    trail.push({ x: player.x, y: player.y }); if (trail.length > 10) trail.shift();
 
-  // swipe sobre el laberinto
-  let sx = 0, sy = 0;
-  maze.addEventListener("touchstart", e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-  maze.addEventListener("touchend", e => {
-    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
-    if (Math.abs(dx) < 18 && Math.abs(dy) < 18) return;
-    if (Math.abs(dx) > Math.abs(dy)) move(0, dx > 0 ? 1 : -1);
-    else move(dy > 0 ? 1 : -1, 0);
-  }, { passive: true });
-  // teclado (para probar en escritorio)
-  window.__mazeKey && window.removeEventListener("keydown", window.__mazeKey);
-  window.__mazeKey = (e) => { const map = { ArrowUp:[-1,0], ArrowDown:[1,0], ArrowLeft:[0,-1], ArrowRight:[0,1] }; if (map[e.key]) { e.preventDefault(); move(...map[e.key]); } };
-  window.addEventListener("keydown", window.__mazeKey);
-
-  // decoración: emojis de fiesta flotando
-  const party = document.createElement("div");
-  party.className = "hearts";
-  const drunkPool = ["🍺","🍻","🥴","🤮","🥂","🍷","🍾","💫","🤢"];
-  for (let i = 0; i < 16; i++) {
-    const h = document.createElement("div");
-    h.className = "heart";
-    h.textContent = randItem(drunkPool);
-    h.style.left = Math.random() * 100 + "%";
-    h.style.animationDuration = (6 + Math.random() * 7) + "s";
-    h.style.animationDelay = (-Math.random() * 10) + "s";
-    h.style.fontSize = (16 + Math.random() * 18) + "px";
-    party.appendChild(h);
-  }
-  game.appendChild(party);
-
-  render();
-}
-
-// generador de laberinto perfecto (recursive backtracker). N impar.
-function genMaze(N) {
-  const M = Array.from({ length: N }, () => Array(N).fill(1));
-  function carve(r, c) {
-    M[r][c] = 0;
-    const dirs = [[0, 2], [0, -2], [2, 0], [-2, 0]];
-    shuffle(dirs);
-    for (const [dr, dc] of dirs) {
-      const nr = r + dr, nc = c + dc;
-      if (nr > 0 && nc > 0 && nr < N - 1 && nc < N - 1 && M[nr][nc] === 1) {
-        M[r + dr / 2][c + dc / 2] = 0;
-        carve(nr, nc);
+    // obstáculos: rebote + tropiezo
+    for (const o of obstacles) {
+      if (dist(player, o) < player.r + o.r) {
+        const nx = (player.x - o.x), ny = (player.y - o.y), nd = Math.hypot(nx, ny) || 1;
+        player.x = o.x + nx / nd * (player.r + o.r);
+        player.y = o.y + ny / nd * (player.r + o.r);
+        player.vx = nx / nd * 2.4; player.vy = ny / nd * 2.4;
+        fb.className = "feedback bad"; fb.textContent = randItem(["¡ay, el bordillo!", "uy 🛢️", "¡cuidado!", "el suelo se mueve…"]);
       }
     }
+
+    // enemigos: mover + colisión = vuelta a empezar
+    for (const en of enemies) {
+      en.x += en.vx; en.y += en.vy;
+      if (en.x < en.r || en.x > W - en.r) en.vx *= -1;
+      if (en.y < en.r || en.y > H - en.r) en.vy *= -1;
+      en.x = Math.max(en.r, Math.min(W - en.r, en.x));
+      en.y = Math.max(en.r, Math.min(H - en.r, en.y));
+      if (dist(player, en) < player.r + en.r) {
+        respawn(randItem(["¡La suegra! A empezar 👵", "¡Te pilló la ex! 💃", "¡El perro! 🐕 Vuelta atrás"]));
+      }
+    }
+
+    // meta
+    if (dist(player, goal) < player.r + goal.r - 6 && !won) {
+      won = true; running = false;
+      ok(fb, "¡Llegó con el suegro (de milagro)! 👴🍺 " + (tropiezos ? `Solo ${tropiezos} tropiezo(s).` : "¡Sin despeinarse!"));
+      setTimeout(next, 1200);
+    }
+
+    draw(t);
+    requestAnimationFrame(loop);
   }
-  carve(1, 1);
-  M[N - 2][N - 2] = 0; // asegura la meta abierta
-  return M;
+
+  function emoji(x, y, size, ch) {
+    ctx.font = size + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(ch, x, y + 1);
+  }
+  function imgCircle(img, x, y, r) {
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+    ctx.drawImage(img, x - r, y - r, r * 2, r * 2); ctx.restore();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#b5553f"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  function draw(t) {
+    // suelo
+    ctx.fillStyle = "#2f2a24"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(255,255,255,.04)";
+    for (let y = 0; y < H; y += 24) ctx.fillRect(0, y, W, 12);
+
+    // meta (suegro)
+    ctx.fillStyle = "rgba(201,161,74,.25)"; ctx.beginPath(); ctx.arc(goal.x, goal.y, goal.r + 8, 0, Math.PI * 2); ctx.fill();
+    if (hasSuegro) imgCircle(imgSuegro, goal.x, goal.y, goal.r); else emoji(goal.x, goal.y, 34, "👴");
+
+    // obstáculos
+    obstacles.forEach(o => emoji(o.x, o.y, o.r * 1.8, o.e));
+    // enemigos
+    enemies.forEach(en => emoji(en.x, en.y, en.r * 1.9, en.e));
+
+    // estela borracha
+    trail.forEach((p, i) => {
+      ctx.globalAlpha = (i + 1) / trail.length * 0.25;
+      ctx.fillStyle = "#e08aa0"; ctx.beginPath(); ctx.arc(p.x, p.y, player.r * 0.7, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // jugadora (novia)
+    if (hasNovia) imgCircle(imgNovia, player.x, player.y, player.r);
+    else emoji(player.x, player.y, 30, "🥴");
+
+    // HUD
+    ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.font = "13px serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillText("Tropiezos: " + tropiezos, 8, 8);
+  }
+
+  requestAnimationFrame(loop);
 }
+
 
 /* =========================================================
    P5 — DISTANCIA Fraga → Viladecans (185 ±2 km)

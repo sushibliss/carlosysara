@@ -237,6 +237,7 @@ input[type=range] { width: 100%; height: 30px; accent-color: var(--accent); }
 /* ============ PONG ============ */
 .pong-wrap { width: min(90vw, 420px); }
 #pong { width: 100%; aspect-ratio: 3/4; background: #2b2620; border-radius: 14px; box-shadow: var(--shadow); touch-action: none; display: block; }
+#arena { width: 100%; aspect-ratio: 320/460; background: #2f2a24; border-radius: 14px; box-shadow: var(--shadow); touch-action: none; display: block; }
 .score { font-size: 22px; font-weight: 700; }
 
 /* ============ QUIZ CHIVI ============ */
