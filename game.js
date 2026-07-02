@@ -927,14 +927,16 @@ function shatterScreen() {
   const layer = $("#shatter");
   layer.style.display = "block";
   layer.innerHTML = "";
+  layer.style.animation = "none";
 
   // troceamos la PANTALLA TAL Y COMO ESTÁ (clonando el contenido del juego)
   const rect = game.getBoundingClientRect();
   const vh = window.innerHeight;
-  const cols = 6, rows = 9;
+  const cols = 8, rows = 12;                       // más trozos = más detalle
   const tw = rect.width / cols, th = rect.height / rows;
   const pageBg = getComputedStyle(document.body).backgroundColor || "#f6efe2";
 
+  const shards = [];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const shard = document.createElement("div");
     shard.className = "shard";
@@ -944,7 +946,10 @@ function shatterScreen() {
     shard.style.height = (th + 1) + "px";
     shard.style.overflow = "hidden";
     shard.style.background = pageBg;
-    shard.style.boxShadow = "0 0 0 1px rgba(58,47,37,.10), 0 6px 14px rgba(0,0,0,.12)";
+    shard.style.boxShadow = "0 0 0 1px rgba(0,0,0,.14), 0 6px 16px rgba(0,0,0,.18)";
+    shard.style.filter = "grayscale(0) contrast(1) brightness(1)"; // mismas funciones que el destino → interpola suave
+    shard.style.transition = "filter 1s ease";
+    shard.style.willChange = "transform, filter, opacity";
 
     // clon del juego, recolocado para que cada trozo muestre su porción
     const clone = game.cloneNode(true);
@@ -959,24 +964,39 @@ function shatterScreen() {
     clone.style.boxSizing = "border-box";
     shard.appendChild(clone);
     layer.appendChild(shard);
-
-    const dx = (Math.random() * 2 - 1) * 200;
-    const rot = (Math.random() * 2 - 1) * 150;
-    const delay = (r * 120) + Math.random() * 200;   // caen por filas, escalonado
-    const dur = 1800 + Math.random() * 1100;          // lento
-    shard.animate([
-      { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1 },
-      { transform: `translate(${dx * .5}px, ${vh * .32}px) rotate(${rot * .5}deg) scale(.97)`, opacity: 1, offset: .55 },
-      { transform: `translate(${dx}px, ${vh + 240}px) rotate(${rot}deg) scale(.85)`, opacity: 0 },
-    ], { duration: dur, delay, easing: "cubic-bezier(.33,0,.67,1)", fill: "forwards" });
+    shards.push({ el: shard, r, c });
   }
   // ocultar el juego de fondo
   game.style.opacity = 0;
   $("#progress").style.display = "none";
   $("#skipBtn").style.display = "none";
 
-  // limpia la capa cuando ya han caído todos
-  setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; }, 3500);
+  // FASE 1: la pantalla se congela, se vuelve blanco y negro y tiembla (se agrieta)
+  void layer.offsetWidth; // fuerza reflow para que la transición del filtro arranque
+  setTimeout(() => {
+    shards.forEach(s => { s.el.style.filter = "grayscale(1) contrast(1.08) brightness(.96)"; });
+  }, 40);
+  layer.style.animation = "screenShake .5s ease-in-out 2"; // ~1s temblando
+
+  // FASE 2: pasado ~1,2s, los trozos caen despacio y en cascada
+  const FALL_START = 1200;
+  setTimeout(() => {
+    shards.forEach(({ el, r }) => {
+      const dx = (Math.random() * 2 - 1) * 180;
+      const rot = (Math.random() * 2 - 1) * 200;
+      const delay = (r * 130) + Math.random() * 160;   // cascada de arriba a abajo
+      const dur = 2600 + Math.random() * 1500;          // MUCHO más lento
+      el.animate([
+        { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1, offset: 0 },
+        { transform: `translate(${dx * .3}px, 14px) rotate(${rot * .12}deg) scale(1)`, opacity: 1, offset: .12 },
+        { transform: `translate(${dx * .6}px, ${vh * .34}px) rotate(${rot * .5}deg) scale(.97)`, opacity: 1, offset: .6 },
+        { transform: `translate(${dx}px, ${vh + 260}px) rotate(${rot}deg) scale(.82)`, opacity: 0, offset: 1 },
+      ], { duration: dur, delay, easing: "cubic-bezier(.4,.02,.5,1)", fill: "forwards" });
+    });
+  }, FALL_START);
+
+  // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
+  setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; }, FALL_START + rows * 130 + 4300);
 }
 
 function showFinal() {

@@ -282,6 +282,14 @@ input[type=range] { width: 100%; height: 30px; accent-color: var(--accent); }
 /* ============ ROTURA DE PANTALLA ============ */
 .shatter { position: fixed; inset: 0; z-index: 60; pointer-events: none; display: none; }
 .shard { position: absolute; will-change: transform, opacity; }
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-4px, 2px) rotate(-.3deg); }
+  30% { transform: translate(5px, -2px) rotate(.3deg); }
+  45% { transform: translate(-5px, 3px) rotate(-.2deg); }
+  60% { transform: translate(4px, -1px) rotate(.2deg); }
+  75% { transform: translate(-3px, 2px); }
+}
 
 /* ============ CUENTA ATRÁS FINAL ============ */
 .final {
