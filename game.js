@@ -24,6 +24,9 @@ const CONFIG = {
   distancia:{ correctKm: 185, tolerance: 2, min: 0, max: 400 },
   pong:     { winScore: 3 },
 
+  // P8 — Wordle. Palabras de 5 letras; se elige una al azar cada partida.
+  wordle: { words: ["tenis", "padel", "floky"] },
+
   // P7 — Quiz del Chivi. fake = la frase que NO es del Chivi.
   // ⚠️ Teresa: valida las frases "reales" y cámbialas si hace falta.
   chivi: {
@@ -74,6 +77,7 @@ const screens = [
   screenDistancia, // 5
   screenPong,      // 6
   screenChivi,     // 7
+  screenWordle,    // 8
 ];
 let current = 0;
 
@@ -137,7 +141,7 @@ function screenWelcome() {
 
   const p = document.createElement("p");
   p.className = "hint";
-  p.textContent = "7 pruebas te separan de tu destino. Falla y la novia tomará nota. Suerte (la vas a necesitar).";
+  p.textContent = "8 pruebas te separan de tu destino. Falla y la novia tomará nota. Suerte (la vas a necesitar).";
   s.appendChild(p);
 
   const btn = document.createElement("button");
@@ -169,7 +173,7 @@ function screenWelcome() {
    ========================================================= */
 function screenPuzzle() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 1 de 7</p><h2>Recompón al galán</h2>
+  s.innerHTML = `<p class="kicker">Prueba 1 de 8</p><h2>Recompón al galán</h2>
     <p class="hint">Toca dos piezas para intercambiarlas. Reconstruye la foto del novio… si te atreves.</p>`;
 
   const board = document.createElement("div");
@@ -239,7 +243,7 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.fl
 function screenCigarro() {
   const s = makeScreen();
   const cfg = CONFIG.cigarro;
-  s.innerHTML = `<p class="kicker">Prueba 2 de 7</p><h2>El Winston de la verdad</h2>
+  s.innerHTML = `<p class="kicker">Prueba 2 de 8</p><h2>El Winston de la verdad</h2>
     <p class="hint">Estira o encoge el cigarro hasta que mida lo que mide un Winston largo. Sin reglas trampa.</p>`;
 
   const card = document.createElement("div");
@@ -323,7 +327,7 @@ function screenCigarro() {
 function screenPollos() {
   const s = makeScreen();
   const TOTAL = 6;
-  s.innerHTML = `<p class="kicker">Prueba 3 de 7</p><h2>Sexador de pollos</h2>
+  s.innerHTML = `<p class="kicker">Prueba 3 de 8</p><h2>Sexador de pollos</h2>
     <p class="hint">De uno en uno. Acierta los ${TOTAL} seguidos. Si fallas uno… vuelta al primer pollo. 🐔</p>`;
 
   let idx = 0;
@@ -401,7 +405,7 @@ function screenPollos() {
    ========================================================= */
 function screenObstacles() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 4 de 7</p><h2>Llévala con el suegro 🥴</h2>
+  s.innerHTML = `<p class="kicker">Prueba 4 de 8</p><h2>Llévala con el suegro 🥴</h2>
     <p class="hint">Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva los obstáculos 🛢️ y a los enemigos 👵💃🐕 y llega arriba con el suegro 👴.</p>`;
 
   const wrap = document.createElement("div");
@@ -596,7 +600,7 @@ function screenObstacles() {
 function screenDistancia() {
   const s = makeScreen();
   const cfg = CONFIG.distancia;
-  s.innerHTML = `<p class="kicker">Prueba 5 de 7</p><h2>De Fraga a Viladecans</h2>
+  s.innerHTML = `<p class="kicker">Prueba 5 de 8</p><h2>De Fraga a Viladecans</h2>
     <p class="hint">¿Cuántos kilómetros separan la patria chica del altar? Afina, geógrafo.</p>`;
 
   const card = document.createElement("div");
@@ -627,7 +631,7 @@ function screenDistancia() {
    ========================================================= */
 function screenPong() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 6 de 7</p><h2>Pong nupcial</h2>
+  s.innerHTML = `<p class="kicker">Prueba 6 de 8</p><h2>Pong nupcial</h2>
     <p class="hint">Primero a ${CONFIG.pong.winScore}. Tú abajo (desliza), la máquina arriba. Pásale el anillo 💍.</p>
     <div class="score"><span id="aiScore">0</span> — <span id="meScore">0</span></div>`;
 
@@ -764,7 +768,7 @@ function screenPong() {
    ========================================================= */
 function screenChivi() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 7 de 7</p><h2>Trivial del Chivi</h2>
+  s.innerHTML = `<p class="kicker">Prueba 7 de 8</p><h2>Trivial del Chivi</h2>
     <p class="hint">Una de estas frases NUNCA salió de la pluma del Chivi. ¿Cuál es la impostora?</p>`;
 
   const opts = CONFIG.chivi.options.map((o, i) => ({ ...o, i }));
@@ -791,6 +795,122 @@ function screenChivi() {
     };
     box.appendChild(b);
   });
+}
+
+/* =========================================================
+   P8 — WORDLE: adivina la palabra (5 letras, 6 intentos)
+   ========================================================= */
+function screenWordle() {
+  const s = makeScreen();
+  const ROWS = 6, LEN = 5;
+  const answer = randItem(CONFIG.wordle.words).toUpperCase();
+
+  s.innerHTML = `<p class="kicker">Prueba 8 de 8</p><h2>La palabra secreta</h2>
+    <p class="hint">5 letras, 6 intentos. Verde = letra y sitio correctos · Amarillo = está pero en otro sitio · Gris = no está. ¡Última prueba!</p>`;
+
+  const board = document.createElement("div");
+  board.className = "wordle-board";
+  s.appendChild(board);
+  const cells = [];
+  for (let r = 0; r < ROWS; r++) {
+    const row = document.createElement("div");
+    row.className = "wordle-row";
+    cells[r] = [];
+    for (let c = 0; c < LEN; c++) {
+      const t = document.createElement("div");
+      t.className = "wordle-tile";
+      row.appendChild(t);
+      cells[r][c] = t;
+    }
+    board.appendChild(row);
+  }
+
+  const fb = feedbackEl(s);
+
+  // teclado en pantalla
+  const kb = document.createElement("div");
+  kb.className = "keyboard";
+  const rowsKb = ["QWERTYUIOP", "ASDFGHJKLÑ", "↵ZXCVBNM⌫"];
+  const keyState = {}; // letra -> estado para colorear teclas
+  rowsKb.forEach(rk => {
+    const kr = document.createElement("div");
+    kr.className = "kb-row";
+    for (const ch of rk) {
+      const key = document.createElement("button");
+      key.className = "key" + (ch === "↵" || ch === "⌫" ? " key-wide" : "");
+      key.textContent = ch;
+      key.dataset.k = ch;
+      key.onclick = () => press(ch);
+      kr.appendChild(key);
+    }
+    kb.appendChild(kr);
+  });
+  s.appendChild(kb);
+
+  let row = 0, col = 0, done = false;
+  const grid = Array.from({ length: ROWS }, () => Array(LEN).fill(""));
+
+  function press(ch) {
+    if (done) return;
+    if (ch === "↵") return submit();
+    if (ch === "⌫") { if (col > 0) { col--; grid[row][col] = ""; paint(); } return; }
+    if (col < LEN) { grid[row][col] = ch; col++; paint(); }
+  }
+
+  function paint() {
+    for (let c = 0; c < LEN; c++) {
+      cells[row][c].textContent = grid[row][c];
+      cells[row][c].classList.toggle("filled", !!grid[row][c]);
+    }
+  }
+
+  function submit() {
+    if (col < LEN) { fb.className = "feedback bad"; fb.textContent = "Faltan letras, campeón."; return; }
+    const guess = grid[row].join("");
+    // colorear con manejo de letras repetidas
+    const res = Array(LEN).fill("absent");
+    const rem = {};
+    for (let c = 0; c < LEN; c++) rem[answer[c]] = (rem[answer[c]] || 0) + 1;
+    for (let c = 0; c < LEN; c++) if (guess[c] === answer[c]) { res[c] = "correct"; rem[guess[c]]--; }
+    for (let c = 0; c < LEN; c++) if (res[c] !== "correct" && rem[guess[c]] > 0) { res[c] = "present"; rem[guess[c]]--; }
+
+    for (let c = 0; c < LEN; c++) {
+      const cell = cells[row][c];
+      cell.classList.add(res[c]);
+      // estado de la tecla (correct > present > absent)
+      const k = guess[c], prev = keyState[k];
+      if (res[c] === "correct" || (res[c] === "present" && prev !== "correct") || (!prev)) keyState[k] = res[c];
+      const keyEl = kb.querySelector(`.key[data-k="${k}"]`);
+      if (keyEl) keyEl.className = "key " + keyState[k];
+    }
+
+    if (guess === answer) {
+      done = true;
+      ok(fb, "¡Palabra clavada! 🎉 Fin del concurso…");
+      setTimeout(next, 1300);
+      return;
+    }
+    row++; col = 0;
+    if (row >= ROWS) {
+      done = true;
+      fb.className = "feedback bad";
+      fb.textContent = `Era “${answer}”. Otra ronda…`;
+      const retry = document.createElement("button");
+      retry.className = "btn secondary"; retry.textContent = "Otra vez 🔁";
+      retry.onclick = () => show(current); // recarga la pantalla (nueva palabra al azar)
+      s.appendChild(retry);
+    }
+  }
+
+  // teclado físico (para probar en escritorio)
+  window.__wordleKey && window.removeEventListener("keydown", window.__wordleKey);
+  window.__wordleKey = (e) => {
+    if (current !== screens.indexOf(screenWordle)) return;
+    if (e.key === "Enter") { e.preventDefault(); press("↵"); }
+    else if (e.key === "Backspace") { e.preventDefault(); press("⌫"); }
+    else if (/^[a-zA-ZñÑ]$/.test(e.key)) press(e.key.toUpperCase());
+  };
+  window.addEventListener("keydown", window.__wordleKey);
 }
 
 /* =========================================================
