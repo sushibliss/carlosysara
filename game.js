@@ -557,17 +557,17 @@ function screenObstacles() {
   function imgCircle(img, x, y, r) {
     ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
     ctx.drawImage(img, x - r, y - r, r * 2, r * 2); ctx.restore();
-    ctx.lineWidth = 2; ctx.strokeStyle = "#b5553f"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#c26479"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
   }
 
   function draw(t) {
     // suelo
-    ctx.fillStyle = "#2f2a24"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#3a2630"; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "rgba(255,255,255,.04)";
     for (let y = 0; y < H; y += 24) ctx.fillRect(0, y, W, 12);
 
     // meta (suegro)
-    ctx.fillStyle = "rgba(201,161,74,.25)"; ctx.beginPath(); ctx.arc(goal.x, goal.y, goal.r + 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(212,163,115,.3)"; ctx.beginPath(); ctx.arc(goal.x, goal.y, goal.r + 8, 0, Math.PI * 2); ctx.fill();
     if (hasSuegro) imgCircle(imgSuegro, goal.x, goal.y, goal.r); else emoji(goal.x, goal.y, 34, "👴");
 
     // obstáculos
@@ -769,8 +769,8 @@ function screenPong() {
     ctx.clearRect(0, 0, W, H);
     drawCourt();
     // palas (novia arriba = IA, novio abajo = jugador)
-    drawPaddle(ai.x, 2, "#c9a14a", aiTrail, imgNovia, hasNovia);
-    drawPaddle(me.x, H - padH - 2, "#b5553f", meTrail, imgNovio, hasNovio);
+    drawPaddle(ai.x, 2, "#d4a373", aiTrail, imgNovia, hasNovia);
+    drawPaddle(me.x, H - padH - 2, "#c26479", meTrail, imgNovio, hasNovio);
     // bola = anillo 💍
     ctx.save();
     ctx.translate(ball.x, ball.y); ctx.rotate(ball.ang);
