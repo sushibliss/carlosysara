@@ -73,11 +73,11 @@ const screens = [
   screenPuzzle,    // 1
   screenCigarro,   // 2
   screenPollos,    // 3
-  screenObstacles, // 4
-  screenDistancia, // 5
-  screenPong,      // 6
-  screenChivi,     // 7
-  screenWordle,    // 8
+  screenDistancia, // 4
+  screenPong,      // 5
+  screenChivi,     // 6
+  screenWordle,    // 7
+  screenObstacles, // 8 — la traca final: la novia borracha
 ];
 let current = 0;
 
@@ -405,8 +405,8 @@ function screenPollos() {
    ========================================================= */
 function screenObstacles() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 4 de 8</p><h2>Llévala con el suegro 🥴</h2>
-    <p class="hint">Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva los obstáculos 🛢️ y a los enemigos 👵💃🐕 y llega arriba con el suegro 👴.</p>`;
+  s.innerHTML = `<p class="kicker">Prueba 8 de 8 · LA TRACA FINAL</p><h2>Llévala con el suegro 🥴</h2>
+    <p class="hint">Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva los obstáculos 🛢️ y a los enemigos 👵💃🐕🐗 y llega arriba con el suegro 👴.</p>`;
 
   const wrap = document.createElement("div");
   wrap.className = "pong-wrap";
@@ -439,11 +439,12 @@ function screenObstacles() {
     { x: 70,  y: 320, r: 20, e: "🚧" },
     { x: 250, y: 320, r: 20, e: "🛢️" },
   ];
-  // enemigos que se mueven (lentos, rebotan en paredes)
+  // enemigos que se mueven (rebotan en paredes)
   const enemies = [
-    { x: 160, y: 110, vx: 1.3, vy: 0.0, r: 18, e: "👵" },
-    { x: 60,  y: 250, vx: 0.0, vy: 1.2, r: 18, e: "💃" },
-    { x: 260, y: 250, vx: -1.1, vy: 0.9, r: 18, e: "🐕" },
+    { x: 160, y: 110, vx: 1.6, vy: 0.0, r: 18, e: "👵" },
+    { x: 60,  y: 250, vx: 0.0, vy: 1.5, r: 18, e: "💃" },
+    { x: 260, y: 250, vx: -1.4, vy: 1.1, r: 18, e: "🐕" },
+    { x: 160, y: 380, vx: 1.2, vy: -0.8, r: 18, e: "🐗" },
   ];
 
   // objetivo de control (donde toca el jugador)
@@ -488,15 +489,15 @@ function screenObstacles() {
       let dx = target.x - player.x, dy = target.y - player.y;
       const d = Math.hypot(dx, dy) || 1;
       dx /= d; dy /= d;
-      const wobble = Math.sin(t * 0.004) * 0.6 + (Math.random() - 0.5) * 0.3; // ±~35°
+      const wobble = Math.sin(t * 0.004) * 0.78 + (Math.random() - 0.5) * 0.4; // ±~48°
       const cos = Math.cos(wobble), sin = Math.sin(wobble);
       const rx = dx * cos - dy * sin, ry = dx * sin + dy * cos;
       player.vx += rx * 0.5; player.vy += ry * 0.5;
     }
-    // bandazos aleatorios + algún tropiezo gordo
-    player.vx += (Math.random() - 0.5) * 0.7;
-    player.vy += (Math.random() - 0.5) * 0.7;
-    if (Math.random() < 0.012) { player.vx += (Math.random() - 0.5) * 6; player.vy += (Math.random() - 0.5) * 6; }
+    // bandazos aleatorios + algún tropiezo gordo (más frecuentes: es la traca final)
+    player.vx += (Math.random() - 0.5) * 0.85;
+    player.vy += (Math.random() - 0.5) * 0.85;
+    if (Math.random() < 0.02) { player.vx += (Math.random() - 0.5) * 7; player.vy += (Math.random() - 0.5) * 7; }
 
     // inercia (mucha = cuesta frenar)
     player.vx *= 0.90; player.vy *= 0.90;
@@ -541,8 +542,8 @@ function screenObstacles() {
     // meta
     if (dist(player, goal) < player.r + goal.r - 6 && !won) {
       won = true; running = false;
-      ok(fb, "¡Llegó con el suegro (de milagro)! 👴🍺 " + (tropiezos ? `Solo ${tropiezos} tropiezo(s).` : "¡Sin despeinarse!"));
-      setTimeout(next, 1200);
+      ok(fb, "¡Llegó con el suegro (de milagro)! 👴🍺 Fin del concurso…");
+      setTimeout(next, 1400);
     }
 
     draw(t);
@@ -600,7 +601,7 @@ function screenObstacles() {
 function screenDistancia() {
   const s = makeScreen();
   const cfg = CONFIG.distancia;
-  s.innerHTML = `<p class="kicker">Prueba 5 de 8</p><h2>De Fraga a Viladecans</h2>
+  s.innerHTML = `<p class="kicker">Prueba 4 de 8</p><h2>De Fraga a Viladecans</h2>
     <p class="hint">¿Cuántos kilómetros separan la patria chica del altar? Afina, geógrafo.</p>`;
 
   const card = document.createElement("div");
@@ -631,7 +632,7 @@ function screenDistancia() {
    ========================================================= */
 function screenPong() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 6 de 8</p><h2>Pong nupcial</h2>
+  s.innerHTML = `<p class="kicker">Prueba 5 de 8</p><h2>Pong nupcial</h2>
     <p class="hint">Primero a ${CONFIG.pong.winScore}. Tú abajo (desliza), la máquina arriba. Pásale el anillo 💍.</p>
     <div class="score"><span id="aiScore">0</span> — <span id="meScore">0</span></div>`;
 
@@ -744,11 +745,29 @@ function screenPong() {
     }
   }
 
+  function drawCourt() {
+    // tierra batida
+    ctx.fillStyle = "#c96f4a"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(0,0,0,.05)";
+    for (let y = 0; y < H; y += 16) ctx.fillRect(0, y, W, 8);
+    // líneas blancas de la pista
+    ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 2;
+    ctx.strokeRect(14, 12, W - 28, H - 24);                 // dobles
+    ctx.beginPath(); ctx.moveTo(40, 12); ctx.lineTo(40, H - 12); ctx.stroke();          // individuales izq
+    ctx.beginPath(); ctx.moveTo(W - 40, 12); ctx.lineTo(W - 40, H - 12); ctx.stroke();  // individuales dcha
+    ctx.beginPath(); ctx.moveTo(14, H/2 - 78); ctx.lineTo(W - 14, H/2 - 78); ctx.stroke(); // saque arriba
+    ctx.beginPath(); ctx.moveTo(14, H/2 + 78); ctx.lineTo(W - 14, H/2 + 78); ctx.stroke(); // saque abajo
+    ctx.beginPath(); ctx.moveTo(W/2, H/2 - 78); ctx.lineTo(W/2, H/2 + 78); ctx.stroke();   // línea central de saque
+    // red
+    ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.fillRect(0, H/2 + 2, W, 4);   // sombra
+    ctx.fillStyle = "#f4f0e6"; ctx.fillRect(0, H/2 - 3, W, 5);           // cinta
+    ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 8) { ctx.beginPath(); ctx.moveTo(x, H/2 - 3); ctx.lineTo(x, H/2 + 2); ctx.stroke(); }
+  }
+
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    // línea central
-    ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.setLineDash([6, 8]);
-    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke(); ctx.setLineDash([]);
+    drawCourt();
     // palas (novia arriba = IA, novio abajo = jugador)
     drawPaddle(ai.x, 2, "#c9a14a", aiTrail, imgNovia, hasNovia);
     drawPaddle(me.x, H - padH - 2, "#b5553f", meTrail, imgNovio, hasNovio);
@@ -768,7 +787,7 @@ function screenPong() {
    ========================================================= */
 function screenChivi() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 7 de 8</p><h2>Trivial del Chivi</h2>
+  s.innerHTML = `<p class="kicker">Prueba 6 de 8</p><h2>Trivial del Chivi</h2>
     <p class="hint">Una de estas frases NUNCA salió de la pluma del Chivi. ¿Cuál es la impostora?</p>`;
 
   const opts = CONFIG.chivi.options.map((o, i) => ({ ...o, i }));
@@ -805,8 +824,8 @@ function screenWordle() {
   const ROWS = 6, LEN = 5;
   const answer = randItem(CONFIG.wordle.words).toUpperCase();
 
-  s.innerHTML = `<p class="kicker">Prueba 8 de 8</p><h2>La palabra secreta</h2>
-    <p class="hint">5 letras, 6 intentos. Verde = letra y sitio correctos · Amarillo = está pero en otro sitio · Gris = no está. ¡Última prueba!</p>`;
+  s.innerHTML = `<p class="kicker">Prueba 7 de 8</p><h2>La palabra secreta</h2>
+    <p class="hint">5 letras, 6 intentos. Verde = letra y sitio correctos · Amarillo = está pero en otro sitio · Gris = no está.</p>`;
 
   const board = document.createElement("div");
   board.className = "wordle-board";
@@ -886,7 +905,7 @@ function screenWordle() {
 
     if (guess === answer) {
       done = true;
-      ok(fb, "¡Palabra clavada! 🎉 Fin del concurso…");
+      ok(fb, "¡Palabra clavada! 🎉 Queda la traca final…");
       setTimeout(next, 1300);
       return;
     }
