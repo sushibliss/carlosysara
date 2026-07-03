@@ -406,7 +406,7 @@ function screenPollos() {
 function screenObstacles() {
   const s = makeScreen();
   s.innerHTML = `<p class="kicker">Prueba 8 de 8 · LA TRACA FINAL</p><h2>Llévala con el suegro 🥴</h2>
-    <p class="hint">Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva los obstáculos 🛢️ y a los enemigos 👵💃🐕🐗 y llega arriba con el suegro 👴.</p>`;
+    <p class="hint">Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva obstáculos 🛢️ y enemigos 👵💃🐕🐗… y NI SE TE OCURRA tocar las copas 🍺🍷🥃: cada trago la emborracha más.</p>`;
 
   const wrap = document.createElement("div");
   wrap.className = "pong-wrap";
@@ -446,6 +446,15 @@ function screenObstacles() {
     { x: 260, y: 250, vx: -1.4, vy: 1.1, r: 18, e: "🐕" },
     { x: 160, y: 380, vx: 1.2, vy: -0.8, r: 18, e: "🐗" },
   ];
+  // bebidas: si las toca, se las bebe (borrachera acumulativa)
+  const drinks = [
+    { x: 120, y: 190, r: 15, e: "🍺", active: true },
+    { x: 210, y: 285, r: 15, e: "🍷", active: true },
+    { x: 55,  y: 105, r: 15, e: "🥃", active: true },
+    { x: 265, y: 90,  r: 15, e: "🍾", active: true },
+  ];
+  let drunk = 0;          // nivel de borrachera extra (0..4)
+  let invertedUntil = 0;  // tras un trago, el mundo gira (controles invertidos)
 
   // objetivo de control (donde toca el jugador)
   let target = null;
@@ -489,20 +498,22 @@ function screenObstacles() {
       let dx = target.x - player.x, dy = target.y - player.y;
       const d = Math.hypot(dx, dy) || 1;
       dx /= d; dy /= d;
-      const wobble = Math.sin(t * 0.004) * 0.78 + (Math.random() - 0.5) * 0.4; // ±~48°
+      // el vaivén crece con cada trago
+      const wobble = Math.sin(t * 0.004) * (0.78 + drunk * 0.16) + (Math.random() - 0.5) * (0.4 + drunk * 0.15);
       const cos = Math.cos(wobble), sin = Math.sin(wobble);
-      const rx = dx * cos - dy * sin, ry = dx * sin + dy * cos;
+      let rx = dx * cos - dy * sin, ry = dx * sin + dy * cos;
+      if (now < invertedUntil) { rx = -rx; ry = -ry; } // el mundo gira: va al revés
       player.vx += rx * 0.5; player.vy += ry * 0.5;
     }
-    // bandazos aleatorios + algún tropiezo gordo (más frecuentes: es la traca final)
-    player.vx += (Math.random() - 0.5) * 0.85;
-    player.vy += (Math.random() - 0.5) * 0.85;
-    if (Math.random() < 0.02) { player.vx += (Math.random() - 0.5) * 7; player.vy += (Math.random() - 0.5) * 7; }
+    // bandazos aleatorios + algún tropiezo gordo (crecen con la borrachera)
+    player.vx += (Math.random() - 0.5) * (0.85 + drunk * 0.22);
+    player.vy += (Math.random() - 0.5) * (0.85 + drunk * 0.22);
+    if (Math.random() < 0.02 + drunk * 0.008) { player.vx += (Math.random() - 0.5) * 7; player.vy += (Math.random() - 0.5) * 7; }
 
     // inercia (mucha = cuesta frenar)
     player.vx *= 0.90; player.vy *= 0.90;
-    // límite de velocidad
-    const sp = Math.hypot(player.vx, player.vy), MAX = 3.4;
+    // límite de velocidad (borracha = más lanzada)
+    const sp = Math.hypot(player.vx, player.vy), MAX = 3.4 + drunk * 0.25;
     if (sp > MAX) { player.vx *= MAX / sp; player.vy *= MAX / sp; }
 
     player.x += player.vx; player.y += player.vy;
@@ -524,6 +535,27 @@ function screenObstacles() {
         player.y = o.y + ny / nd * (player.r + o.r);
         player.vx = nx / nd * 2.4; player.vy = ny / nd * 2.4;
         fb.className = "feedback bad"; fb.textContent = randItem(["¡ay, el bordillo!", "uy 🛢️", "¡cuidado!", "el suelo se mueve…"]);
+      }
+    }
+
+    // bebidas: un trago… y a verlas venir
+    for (const dr of drinks) {
+      if (dr.active && dist(player, dr) < player.r + dr.r) {
+        dr.active = false;
+        drunk = Math.min(4, drunk + 1);
+        invertedUntil = now + 2200;
+        fb.className = "feedback bad";
+        fb.textContent = randItem([
+          "¡Glup! Otra ronda " + dr.e + " ¡Todo gira!",
+          "¡Eso no era agua! " + dr.e + " Ve el doble…",
+          "Chupito traicionero " + dr.e + " Controles del revés",
+        ]);
+        // la copa reaparece en otro sitio al rato
+        setTimeout(() => {
+          dr.x = 40 + Math.random() * (W - 80);
+          dr.y = 80 + Math.random() * (H - 180);
+          dr.active = true;
+        }, 5000);
       }
     }
 
@@ -572,6 +604,13 @@ function screenObstacles() {
 
     // obstáculos
     obstacles.forEach(o => emoji(o.x, o.y, o.r * 1.8, o.e));
+    // bebidas (brillan un poco para tentar)
+    drinks.forEach(dr => {
+      if (!dr.active) return;
+      ctx.fillStyle = "rgba(212,163,115,.18)";
+      ctx.beginPath(); ctx.arc(dr.x, dr.y, dr.r + 5 + Math.sin(t * 0.005) * 2, 0, Math.PI * 2); ctx.fill();
+      emoji(dr.x, dr.y, dr.r * 2, dr.e);
+    });
     // enemigos
     enemies.forEach(en => emoji(en.x, en.y, en.r * 1.9, en.e));
 
@@ -582,13 +621,27 @@ function screenObstacles() {
     });
     ctx.globalAlpha = 1;
 
+    // visión doble: un "fantasma" de la novia que baila alrededor
+    if (drunk > 0) {
+      ctx.globalAlpha = 0.22 + drunk * 0.07;
+      const off = 5 + drunk * 3;
+      const gx = player.x + Math.sin(t * 0.006) * off, gy = player.y + Math.cos(t * 0.005) * off * 0.7;
+      if (hasNovia) ctx.drawImage(imgNovia, gx - player.r, gy - player.r, player.r * 2, player.r * 2);
+      else emoji(gx, gy, 30, "🥴");
+      ctx.globalAlpha = 1;
+    }
+
     // jugadora (novia)
     if (hasNovia) imgCircle(imgNovia, player.x, player.y, player.r);
     else emoji(player.x, player.y, 30, "🥴");
 
     // HUD
     ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.font = "13px serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
-    ctx.fillText("Tropiezos: " + tropiezos, 8, 8);
+    ctx.fillText("Tropiezos: " + tropiezos + (drunk ? "   Copas: " + "🍺".repeat(drunk) : ""), 8, 8);
+    if (performance.now() < invertedUntil) {
+      ctx.fillStyle = "#e8b8c4"; ctx.textAlign = "center";
+      ctx.fillText("🔄 ¡el mundo gira! 🔄", W / 2, 26);
+    }
   }
 
   requestAnimationFrame(loop);
