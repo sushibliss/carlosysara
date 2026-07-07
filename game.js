@@ -1328,6 +1328,9 @@ function shatterScreen() {
       });
     }, FALL_START);
 
+    // FASE 3: lluvia de corazones mientras caen los trozos y durante el interludio
+    setTimeout(() => rainHearts(9000), FALL_START + 1100);
+
     // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
     setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; layer.style.filter = "none"; }, FALL_START + rows * 130 + 4300);
   } catch (err) {
