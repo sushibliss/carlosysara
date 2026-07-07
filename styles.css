@@ -320,3 +320,26 @@ input[type=range] { width: 100%; height: 30px; accent-color: var(--accent); }
 .final .unit small { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; font-weight: 400; }
 .final .date { font-size: 20px; margin-top: 6px; }
 .final audio { margin-top: 10px; }
+.final { overflow: hidden; }
+.final > * { position: relative; z-index: 2; }
+
+/* emojis flotando suaves detrás de la cuenta atrás */
+.final-hearts { position: absolute !important; inset: 0; z-index: 1; opacity: .45; }
+
+/* letra de la canción en scroll (tipo créditos) */
+.lyrics {
+  height: 132px; width: min(80vw, 420px); overflow: hidden; margin-top: 4px;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 78%, transparent 100%);
+}
+.lyrics-inner {
+  animation: lyricsScroll linear infinite;
+  animation-play-state: paused;
+  transform: translateY(132px);
+}
+.lyrics-inner.rolling { animation-play-state: running; }
+.lyrics-inner p { margin: 0 0 10px; font-size: 17px; line-height: 1.35; font-style: italic; }
+@keyframes lyricsScroll {
+  from { transform: translateY(132px); }
+  to { transform: translateY(-100%); }
+}

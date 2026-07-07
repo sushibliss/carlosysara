@@ -27,6 +27,20 @@ const CONFIG = {
   // P8 — Wordle. Palabras de 5 letras; se elige una al azar cada partida.
   wordle: { words: ["tenis", "padel", "floky"] },
 
+  // Letra de la canción final: una línea por elemento (déjala vacía "" para separar estrofas).
+  // ⚠️ Teresa: pega aquí la letra de verdad, línea a línea.
+  cancionLetra: [
+    "♪ ♫ ♪",
+    "(pega aquí la letra de la canción)",
+    "",
+    "edita game.js → CONFIG.cancionLetra",
+    "cada línea de esta lista",
+    "irá subiendo por la pantalla",
+    "mientras suena vuestra canción",
+    "",
+    "♪ ♫ ♪",
+  ],
+
   // P7 — Quiz del Chivi. fake = la frase que NO es del Chivi.
   // ⚠️ Teresa: valida las frases "reales" y cámbialas si hace falta.
   chivi: {
@@ -214,32 +228,44 @@ function screenPuzzle() {
     return `${(c / 2) * 100}% ${(r / 2) * 100}%`;
   }
 
-  function render(popSlots = []) {
+  let peeking = false;
+
+  // el tablero se construye UNA vez; los movimientos solo actualizan (sin parpadeo)
+  function buildBoard() {
     board.innerHTML = "";
-    order.forEach((pieceIdx, slot) => {
+    for (let slot = 0; slot < 9; slot++) {
       const d = document.createElement("div");
       d.className = "pz-piece";
+      if (imgOk) d.style.backgroundImage = `url("${CONFIG.assets.novio}")`;
+      const sl = slot;
+      d.onclick = () => pick(sl);
+      board.appendChild(d);
+      pieces[slot] = d;
+    }
+  }
+
+  function update(popSlots = []) {
+    pieces.forEach((d, slot) => {
+      const pieceIdx = order[slot];
       if (imgOk) {
-        d.style.backgroundImage = `url("${CONFIG.assets.novio}")`;
-        d.style.backgroundPosition = bgPos(pieceIdx);
+        d.style.backgroundPosition = bgPos(peeking ? slot : pieceIdx);
       } else {
+        d.style.backgroundImage = "none";
         d.style.display = "flex"; d.style.alignItems = "center"; d.style.justifyContent = "center";
         d.style.fontSize = "28px"; d.style.color = "#8a6470";
         d.textContent = pieceIdx + 1;
       }
-      if (pieceIdx === slot) d.classList.add("placed");   // pieza en su sitio
-      if (selected === slot) d.classList.add("sel");
-      if (popSlots.includes(slot)) d.classList.add("pop"); // animación al intercambiar
-      d.onclick = () => pick(slot);
-      board.appendChild(d);
-      pieces[slot] = d;
+      d.classList.toggle("placed", pieceIdx === slot);
+      d.classList.toggle("sel", selected === slot);
+      d.classList.remove("pop");
+      if (popSlots.includes(slot)) { void d.offsetWidth; d.classList.add("pop"); }
     });
   }
 
   function pick(slot) {
-    if (solved) return;
-    if (selected === null) { selected = slot; render(); return; }
-    if (selected === slot) { selected = null; render(); return; }
+    if (solved || peeking) return;
+    if (selected === null) { selected = slot; update(); return; }
+    if (selected === slot) { selected = null; update(); return; }
     const a = selected, b = slot;
     [order[a], order[b]] = [order[b], order[a]];
     selected = null;
@@ -247,7 +273,7 @@ function screenPuzzle() {
     movesEl.textContent = "Movimientos: " + moves;
     const pulla = pullas.find(p => p[0] === moves);
     if (pulla) { fb.className = "feedback bad"; fb.textContent = pulla[1]; }
-    render([a, b]);
+    update([a, b]);
     if (order.every((v, i) => v === i)) {
       solved = true;
       board.classList.add("pz-solved");
@@ -258,12 +284,11 @@ function screenPuzzle() {
   }
 
   // chuleta: mantener pulsado para ver la foto entera
-  let peeking = false;
   function setPeek(on) {
     if (solved || !imgOk) return;
     peeking = on;
     board.classList.toggle("pz-peeking", on);
-    pieces.forEach((d, slot) => { if (d) d.style.backgroundPosition = bgPos(on ? slot : order[slot]); });
+    update();
   }
   peekBtn.addEventListener("mousedown", () => setPeek(true));
   peekBtn.addEventListener("touchstart", e => { setPeek(true); e.preventDefault(); }, { passive: false });
@@ -272,10 +297,11 @@ function screenPuzzle() {
 
   // fallback si la imagen no existe: numeritos para poder probar
   const test = new Image();
-  test.onerror = () => { imgOk = false; render(); };
+  test.onerror = () => { imgOk = false; update(); };
   test.src = CONFIG.assets.novio;
 
-  render();
+  buildBoard();
+  update();
 }
 
 // pequeña explosión de corazones sobre un elemento (celebración)
@@ -1153,7 +1179,7 @@ function shatterScreen() {
   }, FALL_START);
 
   // FASE 3: lluvia de corazones sobre la cuenta atrás recién descubierta
-  setTimeout(() => rainHearts(4500), FALL_START + 1100);
+  setTimeout(() => rainHearts(9000), FALL_START + 1100);
 
   // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
   setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; }, FALL_START + rows * 130 + 4300);
@@ -1176,7 +1202,7 @@ function rainHearts(ms) {
       { transform: `translateY(${window.innerHeight + 70}px) rotate(${(Math.random() * 2 - 1) * 180}deg)`, opacity: .85 },
     ], { duration: 2600 + Math.random() * 1900, easing: "linear", fill: "forwards" });
     setTimeout(() => h.remove(), 4600);
-    setTimeout(spawn, 85);
+    setTimeout(spawn, 48);
   })();
 }
 
@@ -1195,11 +1221,49 @@ function showFinal() {
   `;
   document.body.appendChild(wrap);
 
+  // emojis flotando suaves detrás de la cuenta atrás
+  const floats = document.createElement("div");
+  floats.className = "hearts final-hearts";
+  const finalPool = ["❤️", "💛", "🤍", "💕", "💖", "💍", "👰", "🤵", "💒", "🌾", "🌼", "🎉", "🥂", "🌹"];
+  for (let i = 0; i < 26; i++) {
+    const h = document.createElement("div");
+    h.className = "heart";
+    h.textContent = randItem(finalPool);
+    h.style.left = Math.random() * 100 + "%";
+    h.style.animationDuration = (6 + Math.random() * 8) + "s";
+    h.style.animationDelay = (-Math.random() * 12) + "s";
+    h.style.fontSize = (13 + Math.random() * 20) + "px";
+    floats.appendChild(h);
+  }
+  wrap.prepend(floats);
+
   // canción de los novios (si existe)
   const audio = document.createElement("audio");
   audio.controls = true; audio.autoplay = true; audio.src = CONFIG.assets.cancion;
   audio.onerror = () => { audio.replaceWith(Object.assign(document.createElement("div"), { className: "label", textContent: "🎵 (sube assets/cancion.mp3 para la canción)" })); };
   wrap.appendChild(audio);
+
+  // letra en scroll (tipo créditos): arranca cuando suena la canción
+  if (CONFIG.cancionLetra && CONFIG.cancionLetra.length) {
+    const lyr = document.createElement("div");
+    lyr.className = "lyrics";
+    const inner = document.createElement("div");
+    inner.className = "lyrics-inner";
+    CONFIG.cancionLetra.forEach(line => {
+      const p = document.createElement("p");
+      p.innerHTML = line === "" ? "&nbsp;" : "";
+      if (line !== "") p.textContent = line;
+      inner.appendChild(p);
+    });
+    lyr.appendChild(inner);
+    wrap.appendChild(lyr);
+    // velocidad: ~3,5s por línea, en bucle
+    inner.style.animationDuration = (CONFIG.cancionLetra.length * 3.5) + "s";
+    audio.addEventListener("play", () => inner.classList.add("rolling"));
+    audio.addEventListener("pause", () => inner.classList.remove("rolling"));
+    // si el autoplay entra sin bloqueo, arranca ya
+    if (!audio.paused) inner.classList.add("rolling");
+  }
 
   const target = new Date(CONFIG.countdownTarget).getTime();
   const pad = n => String(n).padStart(2, "0");
