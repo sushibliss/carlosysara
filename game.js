@@ -1211,31 +1211,26 @@ function screenWordle() {
    ========================================================= */
 function finishGame() {
   setProgress();
-  // 1) los trozos caen y descubren un interludio limpio (color del fondo)
+  // 1) los trozos caen (sin temblor) y descubren un fondo limpio con un resplandor
   showInterlude();
   shatterScreen();
-  // 2) anillos + nombres… y fundido suave hacia la cuenta atrás con la canción
+  // 2) fundido LENTO hacia la cuenta atrás; la canción y la letra entran después
   setTimeout(() => {
     showFinal();
     const il = $(".interlude");
     if (il) {
-      il.style.transition = "opacity 1.4s ease";
+      il.style.transition = "opacity 2.5s ease";
       il.style.opacity = "0";
-      setTimeout(() => il.remove(), 1500);
+      setTimeout(() => il.remove(), 2600);
     }
-    setTimeout(() => rainHearts(6000), 900);
-  }, 8000);
+  }, 7000);
 }
 
-// interludio: pantalla del color del fondo con los anillos uniéndose
+// interludio: pantalla del color del fondo con un resplandor suave (sin nombres ni emojis)
 function showInterlude() {
   const il = document.createElement("div");
   il.className = "interlude";
-  il.innerHTML = `
-    <div class="il-rings"><span class="il-ring l">💍</span><span class="il-ring r">💍</span></div>
-    <div class="il-heart">❤️</div>
-    <div class="il-names">Carlos <span>&amp;</span> Sara</div>
-    <div class="il-date">25 · julio · 2026</div>`;
+  il.innerHTML = `<div class="il-glow"></div>`;
   document.body.appendChild(il);
 }
 
@@ -1302,13 +1297,12 @@ function shatterScreen() {
     ], { duration: 750, easing: "ease-out", fill: "forwards" });
     setTimeout(() => flash.remove(), 850);
 
-    // FASE 1: la pantalla se congela, se vuelve blanco y negro y tiembla (se agrieta)
+    // FASE 1: la pantalla se congela y se vuelve blanco y negro (sin temblor)
     void layer.offsetWidth; // fuerza reflow para que la transición del filtro arranque
     setTimeout(() => { layer.style.filter = "grayscale(1) contrast(1.08) brightness(.96)"; }, 40);
-    layer.style.animation = "screenShake .45s ease-in-out 3"; // ~1,4s temblando, cada vez peor
 
     // FASE 2: los trozos caen despacio y en cascada (3D solo en escritorio)
-    const FALL_START = 1500;
+    const FALL_START = 900;
     setTimeout(() => {
       shards.forEach(({ el, r }) => {
         const dx = (Math.random() * 2 - 1) * 180;
@@ -1394,13 +1388,14 @@ function showFinal() {
   }
   wrap.prepend(floats);
 
-  // canción de los novios (si existe)
+  // canción de los novios: entra DESPUÉS de la cuenta atrás y arranca sola
   const audio = document.createElement("audio");
-  audio.controls = true; audio.autoplay = true; audio.src = CONFIG.assets.cancion;
+  audio.controls = true; audio.src = CONFIG.assets.cancion;
+  audio.style.display = "none";
   audio.onerror = () => { audio.replaceWith(Object.assign(document.createElement("div"), { className: "label", textContent: "🎵 (sube assets/cancion.mp3 para la canción)" })); };
   wrap.appendChild(audio);
 
-  // letra en scroll (tipo créditos): arranca cuando suena la canción
+  // letra en scroll (tipo créditos): invisible hasta que la canción suena
   if (CONFIG.cancionLetra && CONFIG.cancionLetra.length) {
     const lyr = document.createElement("div");
     lyr.className = "lyrics";
@@ -1416,11 +1411,16 @@ function showFinal() {
     wrap.appendChild(lyr);
     // velocidad: ~2s por línea → una pasada completa ≈ duración de la canción (3:16)
     inner.style.animationDuration = (CONFIG.cancionLetra.length * 2) + "s";
-    audio.addEventListener("play", () => inner.classList.add("rolling"));
+    // el scroll (y la propia letra) solo aparecen cuando la canción empieza a sonar
+    audio.addEventListener("play", () => { lyr.classList.add("on"); inner.classList.add("rolling"); });
     audio.addEventListener("pause", () => inner.classList.remove("rolling"));
-    // si el autoplay entra sin bloqueo, arranca ya
-    if (!audio.paused) inner.classList.add("rolling");
   }
+
+  // secuencia: 1º cuenta atrás → 2º canción (sola) → 3º letra (con el play)
+  setTimeout(() => {
+    audio.style.display = "";
+    audio.play().catch(() => { /* si el navegador bloquea el autoplay, queda el botón ▶ */ });
+  }, 2200);
 
   const target = new Date(CONFIG.countdownTarget).getTime();
   const pad = n => String(n).padStart(2, "0");
