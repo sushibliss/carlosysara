@@ -786,7 +786,7 @@ function screenDistancia() {
 function screenPong() {
   const s = makeScreen();
   s.innerHTML = `<p class="kicker">Prueba 5 de 8</p><h2>Pong nupcial</h2>
-    <p class="hint">Primero a ${CONFIG.pong.winScore}. Tú abajo (desliza), la máquina arriba. Pásale el anillo 💍.</p>
+    <p class="hint">Primero a ${CONFIG.pong.winScore}. Tú abajo (desliza), la máquina arriba. Ojo: los regalos de boda 🍾💐🎁 desvían el anillo… y tu pala ENCOGE con cada golpe (se recupera al marcar).</p>
     <div class="score"><span id="aiScore">0</span> — <span id="meScore">0</span></div>`;
 
   const wrap = document.createElement("div");
@@ -809,11 +809,20 @@ function screenPong() {
   const imgNovia = new Image(); let hasNovia = false;
   imgNovia.onload = () => hasNovia = true; imgNovia.src = CONFIG.assets.novia;
 
-  const padW = 84, padH = 16;
-  let me = { x: W/2 - padW/2 }, ai = { x: W/2 - padW/2 };
+  const padH = 16, PAD_FULL = 84;
+  let mePadW = PAD_FULL;      // la pala del novio ENCOGE con cada golpe
+  const aiPadW = PAD_FULL;
+  let me = { x: W/2 - PAD_FULL/2 }, ai = { x: W/2 - PAD_FULL/2 };
   const meTrail = [], aiTrail = []; // estelas
   let ball = resetBall(1);
   let meScore = 0, aiScore = 0, running = true;
+
+  // regalos de boda en la pista: se pasean y desvían el anillo
+  const obs = [
+    { x: 80,  y: 128, r: 14, vx: .55,  e: "🍾" },
+    { x: 220, y: 156, r: 14, vx: -.5,  e: "💐" },
+    { x: 150, y: 268, r: 14, vx: .45,  e: "🎁" },
+  ];
 
   function resetBall(dir) {
     // más rápido que antes
@@ -823,7 +832,7 @@ function screenPong() {
   function setMeX(clientX) {
     const rect = cv.getBoundingClientRect();
     const rel = (clientX - rect.left) / rect.width * W;
-    me.x = Math.min(W - padW, Math.max(0, rel - padW/2));
+    me.x = Math.min(W - mePadW, Math.max(0, rel - mePadW/2));
   }
   cv.addEventListener("touchmove", e => { setMeX(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
   cv.addEventListener("touchstart", e => { setMeX(e.touches[0].clientX); }, { passive: true });
@@ -833,9 +842,9 @@ function screenPong() {
     if (!running || current !== screens.indexOf(screenPong)) return;
 
     // IA MÁS LENTA y torpe (más fácil de ganar)
-    const target = ball.x - padW/2;
+    const target = ball.x - aiPadW/2;
     ai.x += Math.max(-1.7, Math.min(1.7, (target - ai.x) * 0.05));
-    ai.x = Math.min(W - padW, Math.max(0, ai.x));
+    ai.x = Math.min(W - aiPadW, Math.max(0, ai.x));
 
     // estelas (guarda posiciones recientes)
     meTrail.push(me.x); if (meTrail.length > 9) meTrail.shift();
@@ -844,14 +853,31 @@ function screenPong() {
     ball.x += ball.vx; ball.y += ball.vy; ball.ang += 0.18;
     if (ball.x < ball.r || ball.x > W - ball.r) ball.vx *= -1;
 
-    if (ball.y - ball.r < padH && ball.x > ai.x && ball.x < ai.x + padW && ball.vy < 0) {
-      ball.vy *= -1; ball.vx += (ball.x - (ai.x + padW/2)) * 0.06;
+    // los regalos se pasean y desvían el anillo
+    for (const o of obs) {
+      o.x += o.vx;
+      if (o.x < 30 + o.r || o.x > W - 30 - o.r) o.vx *= -1;
+      const dx = ball.x - o.x, dy = ball.y - o.y, d = Math.hypot(dx, dy);
+      if (d < ball.r + o.r) {
+        const nx = dx / (d || 1), ny = dy / (d || 1);
+        const dot = ball.vx * nx + ball.vy * ny;
+        ball.vx -= 2 * dot * nx; ball.vy -= 2 * dot * ny;    // rebote
+        ball.vx += (Math.random() - .5) * 1.2;                // caos extra
+        ball.x = o.x + nx * (ball.r + o.r + 1);
+        ball.y = o.y + ny * (ball.r + o.r + 1);
+        if (Math.abs(ball.vy) < 2.2) ball.vy = 2.2 * Math.sign(ball.vy || 1); // que no se quede plano
+      }
     }
-    if (ball.y + ball.r > H - padH && ball.x > me.x && ball.x < me.x + padW && ball.vy > 0) {
-      ball.vy *= -1; ball.vx += (ball.x - (me.x + padW/2)) * 0.06;
+
+    if (ball.y - ball.r < padH && ball.x > ai.x && ball.x < ai.x + aiPadW && ball.vy < 0) {
+      ball.vy *= -1; ball.vx += (ball.x - (ai.x + aiPadW/2)) * 0.06;
     }
-    if (ball.y < 0) { meScore++; meScoreEl.textContent = meScore; ball = resetBall(1); checkWin(); }
-    if (ball.y > H) { aiScore++; aiScoreEl.textContent = aiScore; ball = resetBall(-1); }
+    if (ball.y + ball.r > H - padH && ball.x > me.x && ball.x < me.x + mePadW && ball.vy > 0) {
+      ball.vy *= -1; ball.vx += (ball.x - (me.x + mePadW/2)) * 0.06;
+      mePadW = Math.max(46, mePadW - 7); // cada golpe, la pala encoge
+    }
+    if (ball.y < 0) { meScore++; meScoreEl.textContent = meScore; mePadW = PAD_FULL; ball = resetBall(1); checkWin(); }
+    if (ball.y > H) { aiScore++; aiScoreEl.textContent = aiScore; mePadW = PAD_FULL; ball = resetBall(-1); }
 
     draw();
     requestAnimationFrame(loop);
@@ -875,25 +901,25 @@ function screenPong() {
     ctx.closePath();
   }
 
-  function drawPaddle(x, y, color, trail, img, hasImg) {
+  function drawPaddle(x, y, w, color, trail, img, hasImg) {
     // estela
     trail.forEach((tx, i) => {
       const a = (i + 1) / trail.length * 0.28;
       ctx.globalAlpha = a;
       ctx.fillStyle = color;
-      roundRect(tx, y, padW, padH, 8); ctx.fill();
+      roundRect(tx, y, w, padH, 8); ctx.fill();
     });
     ctx.globalAlpha = 1;
     // pala
     if (hasImg) {
-      ctx.save(); roundRect(x, y, padW, padH, 8); ctx.clip();
-      ctx.drawImage(img, x, y, padW, padH);
+      ctx.save(); roundRect(x, y, w, padH, 8); ctx.clip();
+      ctx.drawImage(img, x, y, w, padH);
       ctx.restore();
-      ctx.lineWidth = 2; ctx.strokeStyle = color; roundRect(x, y, padW, padH, 8); ctx.stroke();
+      ctx.lineWidth = 2; ctx.strokeStyle = color; roundRect(x, y, w, padH, 8); ctx.stroke();
     } else {
       const g = ctx.createLinearGradient(x, y, x, y + padH);
       g.addColorStop(0, "#fff6"); g.addColorStop(.5, color); g.addColorStop(1, "#0003");
-      ctx.fillStyle = g; roundRect(x, y, padW, padH, 8); ctx.fill();
+      ctx.fillStyle = g; roundRect(x, y, w, padH, 8); ctx.fill();
       ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.stroke();
     }
   }
@@ -921,9 +947,14 @@ function screenPong() {
   function draw() {
     ctx.clearRect(0, 0, W, H);
     drawCourt();
+    // regalos de boda (flotan un poco)
+    obs.forEach(o => {
+      ctx.font = (o.r * 2.1) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(o.e, o.x, o.y + Math.sin(Date.now() / 300 + o.x) * 2);
+    });
     // palas (novia arriba = IA, novio abajo = jugador)
-    drawPaddle(ai.x, 2, "#d4a373", aiTrail, imgNovia, hasNovia);
-    drawPaddle(me.x, H - padH - 2, "#c26479", meTrail, imgNovio, hasNovio);
+    drawPaddle(ai.x, 2, aiPadW, "#d4a373", aiTrail, imgNovia, hasNovia);
+    drawPaddle(me.x, H - padH - 2, mePadW, "#c26479", meTrail, imgNovio, hasNovio);
     // bola = anillo 💍
     ctx.save();
     ctx.translate(ball.x, ball.y); ctx.rotate(ball.ang);
