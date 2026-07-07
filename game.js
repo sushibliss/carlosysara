@@ -3,7 +3,8 @@
    Juego de preguntas para la despedida/boda. Castellano,
    tono humorístico-irónico. Responsive y táctil.
    -----------------------------------------------------------
-   CONFIG: edita aquí respuestas, archivos y frases.
+   CONFIG: respuestas, tolerancias y archivos.
+   ✏️ Los TEXTOS del juego se editan en copy.js.
    =========================================================== */
 
 const CONFIG = {
@@ -27,109 +28,6 @@ const CONFIG = {
   // P8 — Wordle. Palabras de 5 letras; se elige una al azar cada partida.
   wordle: { words: ["tenis", "padel", "floky"] },
 
-  // Letra de la canción final: una línea por elemento ("" separa estrofas).
-  cancionLetra: [
-    "Resulta que el otro día",
-    "después de un buen cebollOoooOon",
-    "llegué a Fraga y me encontré",
-    "a Carlos en la Pocion",
-    "",
-    "Carlos y Sara",
-    "Tenis y padel",
-    "Desorden COVID",
-    "Dislexia",
-    "",
-    "Así el amor llega algunas veces",
-    "de pronto y sin anestesia",
-    "",
-    "la catalana con el oscense",
-    "un cuentecito de hadas",
-    "granja de pollos y un Winston largo",
-    "Carlos pa darle caladas",
-    "",
-    "y con de rin que mal rollito",
-    "cuando llegaban llamadas",
-    "",
-    "París bien vale una boda",
-    "pedida en Roland Garros",
-    "con lo guarrete que eres, Carlos",
-    "menos mal que Sara no te contesto",
-    "que nooooooo",
-    "y no fue por la dislexia",
-    "no fue una equivocación",
-    "parece ser que te quiere",
-    "que suerte tienes mamón",
-    "que si roncas",
-    "",
-    "ella te haceee",
-    "",
-    "salto sin red ni colchón",
-    "",
-    "con Aria y Floky cuantos ladridos",
-    "in love con los peluditos",
-    "Sara dibuja en una hoja en blanco",
-    "solo futuros bonitos",
-    "y si se pilla un pedo de muerte",
-    "esto ya no hay quien lo entienda",
-    "en vez de a Carlos sacando el móvil",
-    "tira de suegro en la agenda",
-    "",
-    "Paris bien vale un si quiero",
-    "luna de miel oriental",
-    "va a haber mucho folleteo",
-    "tanto en China como en Vietnam",
-    "",
-    "Anillos en la pineda",
-    "de fraga a viladecans",
-    "Carlos Sara ya lo veis",
-    "que la vida os hizo un eis",
-    "vamos todos a brindar",
-    "",
-    "Carlos no te hagas pajillas",
-    "que ya tienes a la Sareta",
-    "y ademas de estas cosillas",
-    "te hace muy bien la maleta",
-    "",
-    "y qué le voy a hacer",
-    "y qué le voy a hacer",
-    "donde hay pelo hay alegría",
-    "Carlos qué felicidad",
-    "preparate el kamasutra",
-    "para China",
-    "y para Vietnam",
-    "",
-    "por delante y por detrás",
-    "en china hay que meter",
-    "en china hay que meter",
-    "en china hay que meter",
-    "y en Vietnam también",
-    "",
-    "Pedida en Roland Garrós",
-    "Bajo el cielo de París",
-    "Con un email indiscreto",
-    "y Sara dijo oui oui",
-    "",
-    "Fotos de sexy granjero",
-    "CARLOS",
-    "que provocador",
-    "con pollos y entre las piernas",
-    "hay debe haber un pollon",
-    "",
-    "Paris bien vale una boda",
-    "vamos todos a brindar",
-    "por tantas cositas buenas",
-    "que seguro que vendrán",
-    "",
-    "Viva los novios",
-    "que suene fuerte la marcha nupcial",
-    "que vuestro cuento de hadas",
-    "no tenga nunca un final",
-    "",
-    "Viva los novios",
-    "que suene fuerte la marcha nupcial",
-    "que vuestro cuento de hadas",
-    "no tenga nunca un final",
-  ],
 
   // P6 — Aria y Floky: cuántos calcetines hay que salvar y cuántos pueden comerse.
   perros: { salvar: 8, maxComidos: 3 },
@@ -140,14 +38,9 @@ const $ = (sel, el = document) => el.querySelector(sel);
 const game = $("#game");
 const progressBar = $("#progressBar");
 
-const ironies = [
-  "Casi… pero el comité de bodas no lo aprueba.",
-  "No. Y eso que te lo estábamos poniendo fácil.",
-  "Error. La novia ya empieza a dudar.",
-  "Frío, frío. Como los pies antes del “sí, quiero”.",
-  "Incorrecto. Vuelve a intentarlo, campeón.",
-];
 const randItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+// rellena {marcadores} de los textos de copy.js: fmt("Pollo {n}", { n: 2 })
+const fmt = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (vars && k in vars ? vars[k] : m));
 
 // <img> con marcador automático si la imagen no existe
 function imgOr(src, alt, phText, extraClass = "") {
@@ -212,9 +105,9 @@ function feedbackEl(s) {
 }
 function fail(fb) {
   fb.className = "feedback bad";
-  fb.textContent = randItem(ironies);
+  fb.textContent = randItem(COPY.general.fallos);
 }
-function ok(fb, msg = "¡Correcto! 🎉") {
+function ok(fb, msg = COPY.general.correcto) {
   fb.className = "feedback ok";
   fb.textContent = msg;
 }
@@ -224,7 +117,7 @@ function ok(fb, msg = "¡Correcto! 🎉") {
    ========================================================= */
 function screenWelcome() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Concurso pre-boda</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.portada.kicker}</p>`;
 
   const hero = document.createElement("div");
   hero.className = "hero";
@@ -233,17 +126,17 @@ function screenWelcome() {
   s.appendChild(hero);
 
   const h1 = document.createElement("h1");
-  h1.textContent = "El soltero en peligro de extinción";
+  h1.textContent = COPY.portada.titulo;
   s.appendChild(h1);
 
   const p = document.createElement("p");
   p.className = "hint";
-  p.textContent = "8 pruebas te separan de tu destino. Falla y la novia tomará nota. Suerte (la vas a necesitar).";
+  p.textContent = COPY.portada.texto;
   s.appendChild(p);
 
   const btn = document.createElement("button");
   btn.className = "btn big";
-  btn.textContent = "Empezar 💍";
+  btn.textContent = COPY.portada.boton;
   btn.onclick = next;
   s.appendChild(btn);
 
@@ -270,8 +163,8 @@ function screenWelcome() {
    ========================================================= */
 function screenPuzzle() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 1 de 8</p><h2>Recompón al galán</h2>
-    <p class="hint">Toca dos piezas para intercambiarlas. Reconstruye la foto del novio… si te atreves.</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.puzzle.kicker}</p><h2>${COPY.puzzle.titulo}</h2>
+    <p class="hint">${COPY.puzzle.texto}</p>`;
 
   const board = document.createElement("div");
   board.className = "puzzle";
@@ -281,9 +174,9 @@ function screenPuzzle() {
   const bar = document.createElement("div");
   bar.className = "pz-bar";
   const movesEl = document.createElement("span");
-  movesEl.className = "pz-moves"; movesEl.textContent = "Movimientos: 0";
+  movesEl.className = "pz-moves"; movesEl.textContent = COPY.puzzle.movimientos + "0";
   const peekBtn = document.createElement("button");
-  peekBtn.className = "btn ghost pz-peek"; peekBtn.textContent = "🫣 Chuleta";
+  peekBtn.className = "btn ghost pz-peek"; peekBtn.textContent = COPY.puzzle.chuleta;
   bar.appendChild(movesEl); bar.appendChild(peekBtn);
   s.appendChild(bar);
 
@@ -300,11 +193,7 @@ function screenPuzzle() {
   let imgOk = true;
   const pieces = [];
 
-  const pullas = [
-    [12, "Doce movimientos… el novio sigue descuartizado."],
-    [20, "¿Seguro que lo reconoces? Es el de la boda."],
-    [30, "La novia ya está mirando otros candidatos."],
-  ];
+  const pullas = COPY.puzzle.pullas;
 
   function bgPos(idx) {
     const c = idx % 3, r = Math.floor(idx / 3);
@@ -353,14 +242,14 @@ function screenPuzzle() {
     [order[a], order[b]] = [order[b], order[a]];
     selected = null;
     moves++;
-    movesEl.textContent = "Movimientos: " + moves;
+    movesEl.textContent = COPY.puzzle.movimientos + moves;
     const pulla = pullas.find(p => p[0] === moves);
     if (pulla) { fb.className = "feedback bad"; fb.textContent = pulla[1]; }
     update([a, b]);
     if (order.every((v, i) => v === i)) {
       solved = true;
       board.classList.add("pz-solved");
-      ok(fb, `¡Galán recompuesto en ${moves} movimientos! 🧩`);
+      ok(fb, fmt(COPY.puzzle.exito, { movimientos: moves }));
       burstHearts(board);
       setTimeout(next, 1600);
     }
@@ -413,8 +302,8 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.fl
 function screenCigarro() {
   const s = makeScreen();
   const cfg = CONFIG.cigarro;
-  s.innerHTML = `<p class="kicker">Prueba 2 de 8</p><h2>El Winston de la verdad</h2>
-    <p class="hint">Estira o encoge el cigarro hasta que mida lo que mide un Winston largo. Sin reglas trampa.</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.cigarro.kicker}</p><h2>${COPY.cigarro.titulo}</h2>
+    <p class="hint">${COPY.cigarro.texto}</p>`;
 
   const card = document.createElement("div");
   card.className = "card cig-wrap";
@@ -423,12 +312,12 @@ function screenCigarro() {
       <div class="cig" id="cig"><div class="cig-handle" id="handle">↔</div></div>
     </div>
     <div class="ruler" id="ruler"></div>
-    <p style="margin:14px 0 0">Mide: <span class="cm-read" id="cmRead">8.0</span> cm</p>`;
+    <p style="margin:14px 0 0">${COPY.cigarro.mide} <span class="cm-read" id="cmRead">8.0</span> cm</p>`;
   s.appendChild(card);
 
   const fb = feedbackEl(s);
   const btn = document.createElement("button");
-  btn.className = "btn"; btn.textContent = "Confirmar medida 🚬";
+  btn.className = "btn"; btn.textContent = COPY.cigarro.boton;
   s.appendChild(btn);
 
   const stage = $("#stage", card);
@@ -483,7 +372,7 @@ function screenCigarro() {
 
   btn.onclick = () => {
     if (Math.abs(cm - cfg.correctCm) <= cfg.tolerance) {
-      ok(fb, "¡Exacto! 10 cm de pura elegancia rural. 🚬");
+      ok(fb, COPY.cigarro.exito);
       setTimeout(next, 900);
     } else {
       fail(fb);
@@ -497,8 +386,8 @@ function screenCigarro() {
 function screenPollos() {
   const s = makeScreen();
   const TOTAL = 6;
-  s.innerHTML = `<p class="kicker">Prueba 3 de 8</p><h2>Sexador de pollos</h2>
-    <p class="hint">De uno en uno. Acierta los ${TOTAL} seguidos. Si fallas uno… vuelta al primer pollo. 🐔</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.pollos.kicker}</p><h2>${COPY.pollos.titulo}</h2>
+    <p class="hint">${fmt(COPY.pollos.texto, { total: TOTAL })}</p>`;
 
   let idx = 0;
   let truth = makeTruth();           // verdad aleatoria, se regenera al fallar
@@ -529,7 +418,7 @@ function screenPollos() {
     renderDots();
     card.innerHTML = "";
     const label = document.createElement("p");
-    label.className = "tiny"; label.textContent = `Pollo ${idx + 1} de ${TOTAL}`;
+    label.className = "tiny"; label.textContent = fmt(COPY.pollos.contador, { n: idx + 1, total: TOTAL });
     card.appendChild(label);
 
     const pic = imgOr(CONFIG.assets.pollos[idx], "Pollo " + (idx + 1), "🐔", "pollo-pic");
@@ -538,7 +427,7 @@ function screenPollos() {
 
     const btns = document.createElement("div");
     btns.className = "sexbtns";
-    [["M", "Macho ♂"], ["H", "Hembra ♀"]].forEach(([v, txt]) => {
+    [["M", COPY.pollos.macho], ["H", COPY.pollos.hembra]].forEach(([v, txt]) => {
       const b = document.createElement("button");
       b.textContent = txt;
       b.onclick = () => answer(v);
@@ -552,10 +441,10 @@ function screenPollos() {
       idx++;
       if (idx >= TOTAL) {
         renderDots();
-        ok(fb, "¡Ojo clínico! Te contratan en la granja. 🐓");
+        ok(fb, COPY.pollos.exito);
         setTimeout(next, 1000);
       } else {
-        ok(fb, "¡Bien! Siguiente pollo…");
+        ok(fb, COPY.pollos.acierto);
         setTimeout(() => { fb.textContent = ""; fb.className = "feedback"; renderPollo(); }, 500);
       }
     } else {
@@ -575,8 +464,8 @@ function screenPollos() {
    ========================================================= */
 function screenObstacles() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 8 de 8 · LA TRACA FINAL</p><h2>Llévala con el suegro 🥴</h2>
-    <p class="hint">Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva obstáculos 🛢️ y enemigos 👵💃🐕🐗… y NI SE TE OCURRA tocar las copas 🍺🍷🥃: cada trago la emborracha más.</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.borracha.kicker}</p><h2>${COPY.borracha.titulo}</h2>
+    <p class="hint">${COPY.borracha.texto}</p>`;
 
   const wrap = document.createElement("div");
   wrap.className = "pong-wrap";
@@ -713,7 +602,7 @@ function screenObstacles() {
         player.x = o.x + nx / nd * (player.r + o.r);
         player.y = o.y + ny / nd * (player.r + o.r);
         player.vx = nx / nd * 2.4; player.vy = ny / nd * 2.4;
-        fb.className = "feedback bad"; fb.textContent = randItem(["¡ay, el bordillo!", "uy 🛢️", "¡cuidado!", "el suelo se mueve…"]);
+        fb.className = "feedback bad"; fb.textContent = randItem(COPY.borracha.tropiezos);
       }
     }
 
@@ -724,11 +613,7 @@ function screenObstacles() {
         drunk = Math.min(4, drunk + 1);
         invertedUntil = now + 2200;
         fb.className = "feedback bad";
-        fb.textContent = randItem([
-          "¡Glup! Otra ronda " + dr.e + " ¡Todo gira!",
-          "¡Eso no era agua! " + dr.e + " Ve el doble…",
-          "Chupito traicionero " + dr.e + " Controles del revés",
-        ]);
+        fb.textContent = fmt(randItem(COPY.borracha.tragos), { copa: dr.e });
         // la copa reaparece en otro sitio al rato
         setTimeout(() => {
           dr.x = 40 + Math.random() * (W - 80);
@@ -746,14 +631,14 @@ function screenObstacles() {
       en.x = Math.max(en.r, Math.min(W - en.r, en.x));
       en.y = Math.max(en.r, Math.min(H - en.r, en.y));
       if (dist(player, en) < player.r + en.r) {
-        respawn(randItem(["¡La suegra! A empezar 👵", "¡Te pilló la ex! 💃", "¡El perro! 🐕 Vuelta atrás"]));
+        respawn(randItem(COPY.borracha.enemigos));
       }
     }
 
     // meta
     if (dist(player, goal) < player.r + goal.r - 6 && !won) {
       won = true; running = false;
-      ok(fb, "¡Llegó con el suegro (de milagro)! 👴🍺 Fin del concurso…");
+      ok(fb, COPY.borracha.exito);
       setTimeout(next, 1400);
     }
 
@@ -820,10 +705,10 @@ function screenObstacles() {
 
     // HUD
     ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.font = "13px serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
-    ctx.fillText("Tropiezos: " + tropiezos + (drunk ? "   Copas: " + "🍺".repeat(drunk) : ""), 8, 8);
+    ctx.fillText(COPY.borracha.hudTropiezos + tropiezos + (drunk ? COPY.borracha.hudCopas + "🍺".repeat(drunk) : ""), 8, 8);
     if (performance.now() < invertedUntil) {
       ctx.fillStyle = "#e8b8c4"; ctx.textAlign = "center";
-      ctx.fillText("🔄 ¡el mundo gira! 🔄", W / 2, 26);
+      ctx.fillText(COPY.borracha.mundoGira, W / 2, 26);
     }
   }
 
@@ -837,19 +722,19 @@ function screenObstacles() {
 function screenDistancia() {
   const s = makeScreen();
   const cfg = CONFIG.distancia;
-  s.innerHTML = `<p class="kicker">Prueba 4 de 8</p><h2>De Fraga a Viladecans</h2>
-    <p class="hint">¿Cuántos kilómetros separan la patria chica del altar? Afina, geógrafo.</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.distancia.kicker}</p><h2>${COPY.distancia.titulo}</h2>
+    <p class="hint">${COPY.distancia.texto}</p>`;
 
   const card = document.createElement("div");
   card.className = "card";
   card.innerHTML = `<div class="km-read"><span id="kmRead">${Math.round((cfg.min+cfg.max)/2)}</span> km</div>
     <input class="slider" type="range" id="kmSlider" min="${cfg.min}" max="${cfg.max}" value="${Math.round((cfg.min+cfg.max)/2)}" step="1" />
-    <div class="tiny">Desliza para ajustar</div>`;
+    <div class="tiny">${COPY.distancia.ayuda}</div>`;
   s.appendChild(card);
 
   const fb = feedbackEl(s);
   const btn = document.createElement("button");
-  btn.className = "btn"; btn.textContent = "Confirmar distancia 🗺️";
+  btn.className = "btn"; btn.textContent = COPY.distancia.boton;
   s.appendChild(btn);
 
   const slider = $("#kmSlider", card), kmRead = $("#kmRead", card);
@@ -857,7 +742,7 @@ function screenDistancia() {
 
   btn.onclick = () => {
     if (Math.abs(Number(slider.value) - cfg.correctKm) <= cfg.tolerance) {
-      ok(fb, "¡Clavado! 185 km de amor y peajes. 🛣️");
+      ok(fb, COPY.distancia.exito);
       setTimeout(next, 900);
     } else fail(fb);
   };
@@ -868,8 +753,8 @@ function screenDistancia() {
    ========================================================= */
 function screenPong() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 5 de 8</p><h2>Pong nupcial</h2>
-    <p class="hint">Primero a ${CONFIG.pong.winScore}. Tú abajo (desliza), la máquina arriba. Ojo: los regalos de boda 🍾💐🎁 desvían el anillo… y tu pala ENCOGE con cada golpe (se recupera al marcar).</p>
+  s.innerHTML = `<p class="kicker">${COPY.pong.kicker}</p><h2>${COPY.pong.titulo}</h2>
+    <p class="hint">${fmt(COPY.pong.texto, { puntos: CONFIG.pong.winScore })}</p>
     <div class="score"><span id="aiScore">0</span> — <span id="meScore">0</span></div>`;
 
   const wrap = document.createElement("div");
@@ -969,7 +854,7 @@ function screenPong() {
   function checkWin() {
     if (meScore >= CONFIG.pong.winScore) {
       running = false;
-      ok(fb, "¡Reflejos de campeón! 💍");
+      ok(fb, COPY.pong.exito);
       setTimeout(next, 1000);
     }
   }
@@ -1058,8 +943,8 @@ function screenPong() {
 function screenDogs() {
   const s = makeScreen();
   const GOAL = CONFIG.perros.salvar, MAX_EATEN = CONFIG.perros.maxComidos;
-  s.innerHTML = `<p class="kicker">Prueba 6 de 8</p><h2>¡Los calcetines, no! 🧦</h2>
-    <p class="hint">Aria y Floky van a por los calcetines. Toca los calcetines para salvarlos y a los perros para espantarlos. Salva ${GOAL} antes de que se coman ${MAX_EATEN}.</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.perros.kicker}</p><h2>${COPY.perros.titulo}</h2>
+    <p class="hint">${fmt(COPY.perros.texto, { salvar: GOAL, max: MAX_EATEN })}</p>`;
 
   const wrap = document.createElement("div");
   wrap.className = "pong-wrap";
@@ -1078,8 +963,8 @@ function screenDogs() {
   let spawnTimer = 0;
 
   const dogs = [
-    { x: 40,  y: 40,  speed: 1.15, r: 20, e: "🐕", name: "Aria",  stun: 0 },
-    { x: 280, y: 380, speed: 1.3,  r: 20, e: "🐶", name: "Floky", stun: 0 },
+    { x: 40,  y: 40,  speed: 1.15, r: 20, e: "🐕", name: COPY.perros.nombres[0], stun: 0 },
+    { x: 280, y: 380, speed: 1.3,  r: 20, e: "🐶", name: COPY.perros.nombres[1], stun: 0 },
   ];
 
   function spawnSock() {
@@ -1120,18 +1005,14 @@ function screenDogs() {
 
   function win() {
     running = false;
-    ok(fb, `¡${GOAL} calcetines a salvo! Aria y Floky, a dieta. 🐕🐶`);
+    ok(fb, fmt(COPY.perros.exito, { salvar: GOAL }));
     setTimeout(next, 1200);
   }
   function lose() {
     eaten = 0; saved = 0;
     socks.length = 0; spawnSock(); spawnSock();
     fb.className = "feedback bad";
-    fb.textContent = randItem([
-      "Tres calcetines menos. La lavadora llora. 🧦",
-      "Aria y Floky: 3 — Tú: 0. Otra vez.",
-      "Se los han zampado. ¡Más rápido con ese dedo!",
-    ]);
+    fb.textContent = randItem(COPY.perros.derrotas);
   }
 
   let last = performance.now();
@@ -1198,7 +1079,7 @@ function screenDogs() {
 
     // HUD
     ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "13px serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
-    ctx.fillText(`Salvados: ${saved}/${GOAL}   Comidos: ${eaten}/${MAX_EATEN}`, 8, 8);
+    ctx.fillText(`${COPY.perros.hudSalvados}: ${saved}/${GOAL}   ${COPY.perros.hudComidos}: ${eaten}/${MAX_EATEN}`, 8, 8);
   }
 
   requestAnimationFrame(loop);
@@ -1212,8 +1093,8 @@ function screenWordle() {
   const ROWS = 6, LEN = 5;
   const answer = randItem(CONFIG.wordle.words).toUpperCase();
 
-  s.innerHTML = `<p class="kicker">Prueba 7 de 8</p><h2>La palabra secreta</h2>
-    <p class="hint">5 letras, 6 intentos. Verde = letra y sitio correctos · Amarillo = está pero en otro sitio · Gris = no está.</p>`;
+  s.innerHTML = `<p class="kicker">${COPY.wordle.kicker}</p><h2>${COPY.wordle.titulo}</h2>
+    <p class="hint">${COPY.wordle.texto}</p>`;
 
   const board = document.createElement("div");
   board.className = "wordle-board";
@@ -1272,7 +1153,7 @@ function screenWordle() {
   }
 
   function submit() {
-    if (col < LEN) { fb.className = "feedback bad"; fb.textContent = "Faltan letras, campeón."; return; }
+    if (col < LEN) { fb.className = "feedback bad"; fb.textContent = COPY.wordle.faltanLetras; return; }
     const guess = grid[row].join("");
     // colorear con manejo de letras repetidas
     const res = Array(LEN).fill("absent");
@@ -1293,7 +1174,7 @@ function screenWordle() {
 
     if (guess === answer) {
       done = true;
-      ok(fb, "¡Palabra clavada! 🎉 Queda la traca final…");
+      ok(fb, COPY.wordle.exito);
       setTimeout(next, 1300);
       return;
     }
@@ -1301,9 +1182,9 @@ function screenWordle() {
     if (row >= ROWS) {
       done = true;
       fb.className = "feedback bad";
-      fb.textContent = `Era “${answer}”. Otra ronda…`;
+      fb.textContent = fmt(COPY.wordle.derrota, { palabra: answer });
       const retry = document.createElement("button");
-      retry.className = "btn secondary"; retry.textContent = "Otra vez 🔁";
+      retry.className = "btn secondary"; retry.textContent = COPY.wordle.reintentar;
       retry.onclick = () => show(current); // recarga la pantalla (nueva palabra al azar)
       s.appendChild(retry);
     }
@@ -1475,14 +1356,14 @@ function showFinal() {
   const wrap = document.createElement("div");
   wrap.className = "final show";
   wrap.innerHTML = `
-    <div class="label">Cuenta atrás para el “sí, quiero”</div>
+    <div class="label">${COPY.final.titulo}</div>
     <div class="units">
-      <div class="unit"><span class="clock" id="cd-d">00</span><small>días</small></div>
-      <div class="unit"><span class="clock" id="cd-h">00</span><small>horas</small></div>
-      <div class="unit"><span class="clock" id="cd-m">00</span><small>min</small></div>
-      <div class="unit"><span class="clock" id="cd-s">00</span><small>seg</small></div>
+      <div class="unit"><span class="clock" id="cd-d">00</span><small>${COPY.final.dias}</small></div>
+      <div class="unit"><span class="clock" id="cd-h">00</span><small>${COPY.final.horas}</small></div>
+      <div class="unit"><span class="clock" id="cd-m">00</span><small>${COPY.final.min}</small></div>
+      <div class="unit"><span class="clock" id="cd-s">00</span><small>${COPY.final.seg}</small></div>
     </div>
-    <div class="date">25 de julio · 17:00</div>
+    <div class="date">${COPY.final.fecha}</div>
   `;
   document.body.appendChild(wrap);
 
@@ -1506,16 +1387,16 @@ function showFinal() {
   const audio = document.createElement("audio");
   audio.controls = true; audio.src = CONFIG.assets.cancion;
   audio.style.display = "none";
-  audio.onerror = () => { audio.replaceWith(Object.assign(document.createElement("div"), { className: "label", textContent: "🎵 (sube assets/cancion.mp3 para la canción)" })); };
+  audio.onerror = () => { audio.replaceWith(Object.assign(document.createElement("div"), { className: "label", textContent: COPY.final.sinCancion })); };
   wrap.appendChild(audio);
 
   // letra en scroll (tipo créditos): invisible hasta que la canción suena
-  if (CONFIG.cancionLetra && CONFIG.cancionLetra.length) {
+  if (COPY.final.letra && COPY.final.letra.length) {
     const lyr = document.createElement("div");
     lyr.className = "lyrics";
     const inner = document.createElement("div");
     inner.className = "lyrics-inner";
-    CONFIG.cancionLetra.forEach(line => {
+    COPY.final.letra.forEach(line => {
       const p = document.createElement("p");
       p.innerHTML = line === "" ? "&nbsp;" : "";
       if (line !== "") p.textContent = line;
@@ -1524,7 +1405,7 @@ function showFinal() {
     lyr.appendChild(inner);
     wrap.appendChild(lyr);
     // velocidad: ~2s por línea → una pasada completa ≈ duración de la canción (3:16)
-    inner.style.animationDuration = (CONFIG.cancionLetra.length * 2) + "s";
+    inner.style.animationDuration = (COPY.final.letra.length * 2) + "s";
     // el scroll (y la propia letra) solo aparecen cuando la canción empieza a sonar
     audio.addEventListener("play", () => { lyr.classList.add("on"); inner.classList.add("rolling"); });
     audio.addEventListener("pause", () => inner.classList.remove("rolling"));

@@ -13,4 +13,5 @@ Mientras no estén, el juego muestra marcadores y sigue siendo jugable.
 | `suegro.png` | Prueba 8 (meta: el suegro) | PNG cuadrado (se recorta en círculo) |
 | `cancion.mp3` | Final, tras la cuenta atrás | MP3 (o cambia el nombre en game.js) |
 
-> Para cambiar respuestas, márgenes o frases del Chivi, edita el bloque `CONFIG` al inicio de `game.js`.
+> ✏️ **Todos los textos del juego** (títulos, pistas, mensajes, letra de la canción) se editan en **`copy.js`**.
+> Las respuestas, márgenes y palabras del Wordle, en el bloque `CONFIG` al inicio de `game.js`.
