@@ -1128,92 +1128,105 @@ function finishGame() {
 
 function shatterScreen() {
   const layer = $("#shatter");
-  layer.style.display = "block";
-  layer.innerHTML = "";
-  layer.style.animation = "none";
+  // en móvil (iPhone, etc.) el efecto completo agota la memoria de Safari y deja
+  // la página en blanco: menos trozos, sin 3D y con el filtro en la capa (1 vez)
+  const isMobile = Math.min(window.innerWidth, window.innerHeight) < 600
+    || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const cols = isMobile ? 5 : 8, rows = isMobile ? 8 : 12;
 
-  // troceamos la PANTALLA TAL Y COMO ESTÁ (clonando el contenido del juego)
-  const rect = game.getBoundingClientRect();
-  const vh = window.innerHeight;
-  const cols = 8, rows = 12;                       // más trozos = más detalle
-  const tw = rect.width / cols, th = rect.height / rows;
-  const pageBg = getComputedStyle(document.body).backgroundColor || "#f6efe2";
+  try {
+    layer.style.display = "block";
+    layer.innerHTML = "";
+    layer.style.animation = "none";
+    // el blanco y negro se aplica UNA vez a la capa entera (no por trozo)
+    layer.style.filter = "grayscale(0) contrast(1) brightness(1)";
+    layer.style.transition = "filter 1s ease";
 
-  const shards = [];
-  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    const shard = document.createElement("div");
-    shard.className = "shard";
-    shard.style.left = (rect.left + c * tw) + "px";
-    shard.style.top = (rect.top + r * th) + "px";
-    shard.style.width = (tw + 1) + "px";
-    shard.style.height = (th + 1) + "px";
-    shard.style.overflow = "hidden";
-    shard.style.background = pageBg;
-    shard.style.boxShadow = "0 0 0 1px rgba(0,0,0,.14), 0 6px 16px rgba(0,0,0,.18)";
-    shard.style.filter = "grayscale(0) contrast(1) brightness(1)"; // mismas funciones que el destino → interpola suave
-    shard.style.transition = "filter 1s ease";
-    shard.style.willChange = "transform, filter, opacity";
+    // troceamos la PANTALLA TAL Y COMO ESTÁ (clonando el contenido del juego)
+    const rect = game.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const tw = rect.width / cols, th = rect.height / rows;
+    const pageBg = getComputedStyle(document.body).backgroundColor || "#f6efe2";
 
-    // clon del juego, recolocado para que cada trozo muestre su porción
-    const clone = game.cloneNode(true);
-    clone.style.position = "absolute";
-    clone.style.left = (-(c * tw)) + "px";
-    clone.style.top = (-(r * th)) + "px";
-    clone.style.width = rect.width + "px";
-    clone.style.height = rect.height + "px";
-    clone.style.maxWidth = "none";
-    clone.style.margin = "0";
-    clone.style.opacity = "1";
-    clone.style.boxSizing = "border-box";
-    shard.appendChild(clone);
-    layer.appendChild(shard);
-    shards.push({ el: shard, r, c });
+    const shards = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const shard = document.createElement("div");
+      shard.className = "shard";
+      shard.style.left = (rect.left + c * tw) + "px";
+      shard.style.top = (rect.top + r * th) + "px";
+      shard.style.width = (tw + 1) + "px";
+      shard.style.height = (th + 1) + "px";
+      shard.style.overflow = "hidden";
+      shard.style.background = pageBg;
+      shard.style.boxShadow = "0 0 0 1px rgba(0,0,0,.14), 0 6px 16px rgba(0,0,0,.18)";
+
+      // clon del juego, recolocado para que cada trozo muestre su porción
+      const clone = game.cloneNode(true);
+      clone.style.position = "absolute";
+      clone.style.left = (-(c * tw)) + "px";
+      clone.style.top = (-(r * th)) + "px";
+      clone.style.width = rect.width + "px";
+      clone.style.height = rect.height + "px";
+      clone.style.maxWidth = "none";
+      clone.style.margin = "0";
+      clone.style.opacity = "1";
+      clone.style.boxSizing = "border-box";
+      shard.appendChild(clone);
+      layer.appendChild(shard);
+      shards.push({ el: shard, r, c });
+    }
+    // ocultar el juego de fondo
+    game.style.opacity = 0;
+    $("#progress").style.display = "none";
+    $("#skipBtn").style.display = "none";
+
+    // FASE 0: fogonazo blanco, como si estallara algo
+    const flash = document.createElement("div");
+    flash.className = "flash";
+    document.body.appendChild(flash);
+    flash.animate([
+      { opacity: 0 }, { opacity: .95, offset: .12 }, { opacity: 0 },
+    ], { duration: 750, easing: "ease-out", fill: "forwards" });
+    setTimeout(() => flash.remove(), 850);
+
+    // FASE 1: la pantalla se congela, se vuelve blanco y negro y tiembla (se agrieta)
+    void layer.offsetWidth; // fuerza reflow para que la transición del filtro arranque
+    setTimeout(() => { layer.style.filter = "grayscale(1) contrast(1.08) brightness(.96)"; }, 40);
+    layer.style.animation = "screenShake .45s ease-in-out 3"; // ~1,4s temblando, cada vez peor
+
+    // FASE 2: los trozos caen despacio y en cascada (3D solo en escritorio)
+    const FALL_START = 1500;
+    setTimeout(() => {
+      shards.forEach(({ el, r }) => {
+        const dx = (Math.random() * 2 - 1) * 180;
+        const rot = (Math.random() * 2 - 1) * 200;
+        const rx3 = (Math.random() * 2 - 1) * 80;        // vuelco 3D
+        const ry3 = (Math.random() * 2 - 1) * 80;
+        const delay = (r * 130) + Math.random() * 160;   // cascada de arriba a abajo
+        const dur = 2600 + Math.random() * 1500;          // MUCHO más lento
+        const p3 = (rx, ry) => isMobile ? "" : ` rotateX(${rx}deg) rotateY(${ry}deg)`;
+        const pre = isMobile ? "" : "perspective(700px) ";
+        el.animate([
+          { transform: `${pre}translate(0,0) rotate(0)${p3(0, 0)} scale(1)`, opacity: 1, offset: 0 },
+          { transform: `${pre}translate(${dx * .3}px, 14px) rotate(${rot * .12}deg)${p3(rx3 * .2, ry3 * .2)}`, opacity: 1, offset: .12 },
+          { transform: `${pre}translate(${dx * .6}px, ${vh * .34}px) rotate(${rot * .5}deg)${p3(rx3 * .6, ry3 * .6)} scale(.97)`, opacity: 1, offset: .6 },
+          { transform: `${pre}translate(${dx}px, ${vh + 260}px) rotate(${rot}deg)${p3(rx3, ry3)} scale(.8)`, opacity: 0, offset: 1 },
+        ], { duration: dur, delay, easing: "cubic-bezier(.4,.02,.5,1)", fill: "forwards" });
+      });
+    }, FALL_START);
+
+    // FASE 3: lluvia de corazones sobre la cuenta atrás recién descubierta
+    setTimeout(() => rainHearts(9000), FALL_START + 1100);
+
+    // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
+    setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; layer.style.filter = "none"; }, FALL_START + rows * 130 + 4300);
+  } catch (err) {
+    // si algo falla, fuera efecto: la cuenta atrás ya está detrás y debe verse
+    layer.style.display = "none"; layer.innerHTML = "";
+    game.style.opacity = 0;
+    $("#progress").style.display = "none";
+    $("#skipBtn").style.display = "none";
   }
-  // ocultar el juego de fondo
-  game.style.opacity = 0;
-  $("#progress").style.display = "none";
-  $("#skipBtn").style.display = "none";
-
-  // FASE 0: fogonazo blanco, como si estallara algo
-  const flash = document.createElement("div");
-  flash.className = "flash";
-  document.body.appendChild(flash);
-  flash.animate([
-    { opacity: 0 }, { opacity: .95, offset: .12 }, { opacity: 0 },
-  ], { duration: 750, easing: "ease-out", fill: "forwards" });
-  setTimeout(() => flash.remove(), 850);
-
-  // FASE 1: la pantalla se congela, se vuelve blanco y negro y tiembla (se agrieta)
-  void layer.offsetWidth; // fuerza reflow para que la transición del filtro arranque
-  setTimeout(() => {
-    shards.forEach(s => { s.el.style.filter = "grayscale(1) contrast(1.08) brightness(.96)"; });
-  }, 40);
-  layer.style.animation = "screenShake .45s ease-in-out 3"; // ~1,4s temblando, cada vez peor
-
-  // FASE 2: los trozos caen despacio, en cascada y girando en 3D
-  const FALL_START = 1500;
-  setTimeout(() => {
-    shards.forEach(({ el, r }) => {
-      const dx = (Math.random() * 2 - 1) * 180;
-      const rot = (Math.random() * 2 - 1) * 200;
-      const rx3 = (Math.random() * 2 - 1) * 80;        // vuelco 3D
-      const ry3 = (Math.random() * 2 - 1) * 80;
-      const delay = (r * 130) + Math.random() * 160;   // cascada de arriba a abajo
-      const dur = 2600 + Math.random() * 1500;          // MUCHO más lento
-      el.animate([
-        { transform: "perspective(700px) translate(0,0) rotate(0) rotateX(0) rotateY(0) scale(1)", opacity: 1, offset: 0 },
-        { transform: `perspective(700px) translate(${dx * .3}px, 14px) rotate(${rot * .12}deg) rotateX(${rx3 * .2}deg) rotateY(${ry3 * .2}deg)`, opacity: 1, offset: .12 },
-        { transform: `perspective(700px) translate(${dx * .6}px, ${vh * .34}px) rotate(${rot * .5}deg) rotateX(${rx3 * .6}deg) rotateY(${ry3 * .6}deg) scale(.97)`, opacity: 1, offset: .6 },
-        { transform: `perspective(700px) translate(${dx}px, ${vh + 260}px) rotate(${rot}deg) rotateX(${rx3}deg) rotateY(${ry3}deg) scale(.8)`, opacity: 0, offset: 1 },
-      ], { duration: dur, delay, easing: "cubic-bezier(.4,.02,.5,1)", fill: "forwards" });
-    });
-  }, FALL_START);
-
-  // FASE 3: lluvia de corazones sobre la cuenta atrás recién descubierta
-  setTimeout(() => rainHearts(9000), FALL_START + 1100);
-
-  // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
-  setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; }, FALL_START + rows * 130 + 4300);
 }
 
 // lluvia de corazones (celebración sobre la cuenta atrás)

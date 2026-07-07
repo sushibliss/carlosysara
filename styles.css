@@ -291,7 +291,7 @@ input[type=range] { width: 100%; height: 30px; accent-color: var(--accent); }
 
 /* ============ ROTURA DE PANTALLA ============ */
 .shatter { position: fixed; inset: 0; z-index: 60; pointer-events: none; display: none; }
-.shard { position: absolute; will-change: transform, opacity; }
+.shard { position: absolute; }
 .flash { position: fixed; inset: 0; background: #fff; z-index: 70; pointer-events: none; opacity: 0; }
 @keyframes screenShake {
   0%, 100% { transform: translate(0, 0); }
