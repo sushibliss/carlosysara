@@ -302,6 +302,37 @@ input[type=range] { width: 100%; height: 30px; accent-color: var(--accent); }
   75% { transform: translate(-3px, 2px); }
 }
 
+/* ============ INTERLUDIO (outro limpia) ============ */
+.interlude {
+  position: fixed; inset: 0; z-index: 40;
+  background: radial-gradient(120% 80% at 50% -10%, #fdf6f3 0%, var(--bg) 55%, var(--bg2) 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; text-align: center;
+}
+.il-rings { position: relative; height: 72px; width: 100%; }
+.il-ring { position: absolute; top: 0; left: 50%; font-size: 54px; opacity: 0; }
+.il-ring.l { animation: ringL 1.7s cubic-bezier(.2,.8,.3,1) 3.4s forwards; }
+.il-ring.r { animation: ringR 1.7s cubic-bezier(.2,.8,.3,1) 3.4s forwards; }
+@keyframes ringL {
+  from { transform: translateX(calc(-50% - 44vw)) rotate(-30deg); opacity: 0; }
+  30% { opacity: 1; }
+  to { transform: translateX(calc(-50% - 15px)) rotate(0); opacity: 1; }
+}
+@keyframes ringR {
+  from { transform: translateX(calc(-50% + 44vw)) scaleX(-1) rotate(-30deg); opacity: 0; }
+  30% { opacity: 1; }
+  to { transform: translateX(calc(-50% + 15px)) scaleX(-1) rotate(0); opacity: 1; }
+}
+.il-heart { font-size: 36px; opacity: 0; animation: heartPop .8s cubic-bezier(.2,1.5,.4,1) 5.2s forwards; }
+@keyframes heartPop { from { opacity: 0; transform: scale(0) rotate(-20deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+.il-names {
+  font-size: clamp(30px, 9vw, 46px); font-weight: 700; color: var(--ink);
+  opacity: 0; animation: softUp 1.2s ease 5.7s forwards;
+}
+.il-names span { color: var(--accent); }
+.il-date { font-size: 16px; letter-spacing: 5px; color: var(--ink-soft); opacity: 0; animation: softUp 1.2s ease 6.3s forwards; }
+@keyframes softUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
 /* ============ CUENTA ATRÁS FINAL ============ */
 .final {
   position: fixed; inset: 0; z-index: 30; background: #fff; color: #000;
@@ -338,7 +369,7 @@ input[type=range] { width: 100%; height: 30px; accent-color: var(--accent); }
   transform: translateY(132px);
 }
 .lyrics-inner.rolling { animation-play-state: running; }
-.lyrics-inner p { margin: 0 0 10px; font-size: 17px; line-height: 1.35; font-style: italic; }
+.lyrics-inner p { margin: 0 0 10px; font-size: 17px; line-height: 1.35; font-style: italic; text-align: center; }
 @keyframes lyricsScroll {
   from { transform: translateY(132px); }
   to { transform: translateY(-100%); }

@@ -27,18 +27,108 @@ const CONFIG = {
   // P8 — Wordle. Palabras de 5 letras; se elige una al azar cada partida.
   wordle: { words: ["tenis", "padel", "floky"] },
 
-  // Letra de la canción final: una línea por elemento (déjala vacía "" para separar estrofas).
-  // ⚠️ Teresa: pega aquí la letra de verdad, línea a línea.
+  // Letra de la canción final: una línea por elemento ("" separa estrofas).
   cancionLetra: [
-    "♪ ♫ ♪",
-    "(pega aquí la letra de la canción)",
+    "Resulta que el otro día",
+    "después de un buen cebollOoooOon",
+    "llegué a Fraga y me encontré",
+    "a Carlos en la Pocion",
     "",
-    "edita game.js → CONFIG.cancionLetra",
-    "cada línea de esta lista",
-    "irá subiendo por la pantalla",
-    "mientras suena vuestra canción",
+    "Carlos y Sara",
+    "Tenis y padel",
+    "Desorden COVID",
+    "Dislexia",
     "",
-    "♪ ♫ ♪",
+    "Así el amor llega algunas veces",
+    "de pronto y sin anestesia",
+    "",
+    "la catalana con el oscense",
+    "un cuentecito de hadas",
+    "granja de pollos y un Winston largo",
+    "Carlos pa darle caladas",
+    "",
+    "y con de rin que mal rollito",
+    "cuando llegaban llamadas",
+    "",
+    "París bien vale una boda",
+    "pedida en Roland Garros",
+    "con lo guarrete que eres, Carlos",
+    "menos mal que Sara no te contesto",
+    "que nooooooo",
+    "y no fue por la dislexia",
+    "no fue una equivocación",
+    "parece ser que te quiere",
+    "que suerte tienes mamón",
+    "que si roncas",
+    "",
+    "ella te haceee",
+    "",
+    "salto sin red ni colchón",
+    "",
+    "con Aria y Floky cuantos ladridos",
+    "in love con los peluditos",
+    "Sara dibuja en una hoja en blanco",
+    "solo futuros bonitos",
+    "y si se pilla un pedo de muerte",
+    "esto ya no hay quien lo entienda",
+    "en vez de a Carlos sacando el móvil",
+    "tira de suegro en la agenda",
+    "",
+    "Paris bien vale un si quiero",
+    "luna de miel oriental",
+    "va a haber mucho folleteo",
+    "tanto en China como en Vietnam",
+    "",
+    "Anillos en la pineda",
+    "de fraga a viladecans",
+    "Carlos Sara ya lo veis",
+    "que la vida os hizo un eis",
+    "vamos todos a brindar",
+    "",
+    "Carlos no te hagas pajillas",
+    "que ya tienes a la Sareta",
+    "y ademas de estas cosillas",
+    "te hace muy bien la maleta",
+    "",
+    "y qué le voy a hacer",
+    "y qué le voy a hacer",
+    "donde hay pelo hay alegría",
+    "Carlos qué felicidad",
+    "preparate el kamasutra",
+    "para China",
+    "y para Vietnam",
+    "",
+    "por delante y por detrás",
+    "en china hay que meter",
+    "en china hay que meter",
+    "en china hay que meter",
+    "y en Vietnam también",
+    "",
+    "Pedida en Roland Garrós",
+    "Bajo el cielo de París",
+    "Con un email indiscreto",
+    "y Sara dijo oui oui",
+    "",
+    "Fotos de sexy granjero",
+    "CARLOS",
+    "que provocador",
+    "con pollos y entre las piernas",
+    "hay debe haber un pollon",
+    "",
+    "Paris bien vale una boda",
+    "vamos todos a brindar",
+    "por tantas cositas buenas",
+    "que seguro que vendrán",
+    "",
+    "Viva los novios",
+    "que suene fuerte la marcha nupcial",
+    "que vuestro cuento de hadas",
+    "no tenga nunca un final",
+    "",
+    "Viva los novios",
+    "que suene fuerte la marcha nupcial",
+    "que vuestro cuento de hadas",
+    "no tenga nunca un final",
   ],
 
   // P7 — Quiz del Chivi. fake = la frase que NO es del Chivi.
@@ -1121,9 +1211,32 @@ function screenWordle() {
    ========================================================= */
 function finishGame() {
   setProgress();
-  // la cuenta atrás ya queda DETRÁS; los trozos caen y la van descubriendo
-  showFinal();
+  // 1) los trozos caen y descubren un interludio limpio (color del fondo)
+  showInterlude();
   shatterScreen();
+  // 2) anillos + nombres… y fundido suave hacia la cuenta atrás con la canción
+  setTimeout(() => {
+    showFinal();
+    const il = $(".interlude");
+    if (il) {
+      il.style.transition = "opacity 1.4s ease";
+      il.style.opacity = "0";
+      setTimeout(() => il.remove(), 1500);
+    }
+    setTimeout(() => rainHearts(6000), 900);
+  }, 8000);
+}
+
+// interludio: pantalla del color del fondo con los anillos uniéndose
+function showInterlude() {
+  const il = document.createElement("div");
+  il.className = "interlude";
+  il.innerHTML = `
+    <div class="il-rings"><span class="il-ring l">💍</span><span class="il-ring r">💍</span></div>
+    <div class="il-heart">❤️</div>
+    <div class="il-names">Carlos <span>&amp;</span> Sara</div>
+    <div class="il-date">25 · julio · 2026</div>`;
+  document.body.appendChild(il);
 }
 
 function shatterScreen() {
@@ -1215,9 +1328,6 @@ function shatterScreen() {
       });
     }, FALL_START);
 
-    // FASE 3: lluvia de corazones sobre la cuenta atrás recién descubierta
-    setTimeout(() => rainHearts(9000), FALL_START + 1100);
-
     // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
     setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; layer.style.filter = "none"; }, FALL_START + rows * 130 + 4300);
   } catch (err) {
@@ -1301,8 +1411,8 @@ function showFinal() {
     });
     lyr.appendChild(inner);
     wrap.appendChild(lyr);
-    // velocidad: ~3,5s por línea, en bucle
-    inner.style.animationDuration = (CONFIG.cancionLetra.length * 3.5) + "s";
+    // velocidad: ~2s por línea → una pasada completa ≈ duración de la canción (3:16)
+    inner.style.animationDuration = (CONFIG.cancionLetra.length * 2) + "s";
     audio.addEventListener("play", () => inner.classList.add("rolling"));
     audio.addEventListener("pause", () => inner.classList.remove("rolling"));
     // si el autoplay entra sin bloqueo, arranca ya
