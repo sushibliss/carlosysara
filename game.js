@@ -131,15 +131,8 @@ const CONFIG = {
     "no tenga nunca un final",
   ],
 
-  // P7 — Quiz del Chivi. fake = la frase que NO es del Chivi.
-  // ⚠️ Teresa: valida las frases "reales" y cámbialas si hace falta.
-  chivi: {
-    options: [
-      { text: "“Mi cuñado es tan tonto que riega las plantas de plástico”", fake: false },
-      { text: "“Como una vampiresa de la noche, me chupas hasta el carné de identidad”", fake: false },
-      { text: "“Te quiero más que a mi declaración de la renta trimestral”", fake: true },
-    ],
-  },
+  // P6 — Aria y Floky: cuántos calcetines hay que salvar y cuántos pueden comerse.
+  perros: { salvar: 8, maxComidos: 3 },
 };
 
 /* ----------------------- utilidades ----------------------- */
@@ -179,7 +172,7 @@ const screens = [
   screenPollos,    // 3
   screenDistancia, // 4
   screenPong,      // 5
-  screenChivi,     // 6
+  screenDogs,      // 6 — Aria y Floky contra los calcetines
   screenWordle,    // 7
   screenObstacles, // 8 — la traca final: la novia borracha
 ];
@@ -1057,37 +1050,158 @@ function screenPong() {
 }
 
 /* =========================================================
-   P7 — QUIZ DEL CHIVI: ¿cuál NO es del Chivi?
+   P6 — ARIA Y FLOKY: que no se coman los calcetines
+   Toca los calcetines para salvarlos; toca a los perros
+   para espantarlos. Los perros van al calcetín más cercano
+   y cada vez corren más.
    ========================================================= */
-function screenChivi() {
+function screenDogs() {
   const s = makeScreen();
-  s.innerHTML = `<p class="kicker">Prueba 6 de 8</p><h2>Trivial del Chivi</h2>
-    <p class="hint">Una de estas frases NUNCA salió de la pluma del Chivi. ¿Cuál es la impostora?</p>`;
+  const GOAL = CONFIG.perros.salvar, MAX_EATEN = CONFIG.perros.maxComidos;
+  s.innerHTML = `<p class="kicker">Prueba 6 de 8</p><h2>¡Los calcetines, no! 🧦</h2>
+    <p class="hint">Aria y Floky van a por los calcetines. Toca los calcetines para salvarlos y a los perros para espantarlos. Salva ${GOAL} antes de que se coman ${MAX_EATEN}.</p>`;
 
-  const opts = CONFIG.chivi.options.map((o, i) => ({ ...o, i }));
-  shuffle(opts);
-
-  const box = document.createElement("div");
-  box.className = "options";
-  s.appendChild(box);
+  const wrap = document.createElement("div");
+  wrap.className = "pong-wrap";
+  const cv = document.createElement("canvas");
+  cv.id = "dogs";
+  wrap.appendChild(cv);
+  s.appendChild(wrap);
   const fb = feedbackEl(s);
 
-  opts.forEach(o => {
-    const b = document.createElement("button");
-    b.className = "opt"; b.textContent = o.text;
-    b.onclick = () => {
-      if (o.fake) {
-        b.classList.add("ok");
-        ok(fb, "¡Esa es la farsante! 🎤 Eres digno del Chivi.");
-        box.querySelectorAll("button").forEach(x => x.disabled = true);
-        setTimeout(next, 1100);
-      } else {
-        b.classList.add("bad");
-        fail(fb);
+  const W = 320, H = 420; cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+
+  let saved = 0, eaten = 0, running = true;
+  const socks = [];
+  const pops = [];   // efectos flotantes (corazones, ñams…)
+  let spawnTimer = 0;
+
+  const dogs = [
+    { x: 40,  y: 40,  speed: 1.15, r: 20, e: "🐕", name: "Aria",  stun: 0 },
+    { x: 280, y: 380, speed: 1.3,  r: 20, e: "🐶", name: "Floky", stun: 0 },
+  ];
+
+  function spawnSock() {
+    socks.push({ x: 30 + Math.random() * (W - 60), y: 45 + Math.random() * (H - 90), r: 16 });
+  }
+  spawnSock(); spawnSock();
+
+  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+  function tapAt(clientX, clientY) {
+    if (!running) return;
+    const rect = cv.getBoundingClientRect();
+    const x = (clientX - rect.left) / rect.width * W;
+    const y = (clientY - rect.top) / rect.height * H;
+    // ¿calcetín? (radio generoso para el dedo)
+    for (let i = 0; i < socks.length; i++) {
+      if (Math.hypot(socks[i].x - x, socks[i].y - y) < 30) {
+        pops.push({ x: socks[i].x, y: socks[i].y, e: "💖", t: performance.now() });
+        socks.splice(i, 1);
+        saved++;
+        if (saved >= GOAL) win();
+        return;
       }
-    };
-    box.appendChild(b);
-  });
+    }
+    // ¿perro? → se asusta, salta hacia atrás y se queda aturdido un momento
+    for (const d of dogs) {
+      if (Math.hypot(d.x - x, d.y - y) < 34) {
+        d.stun = performance.now() + 900;
+        pops.push({ x: d.x, y: d.y - 22, e: "💢", t: performance.now() });
+        const ang = Math.random() * Math.PI * 2;
+        d.x = Math.min(W - 20, Math.max(20, d.x + Math.cos(ang) * 60));
+        d.y = Math.min(H - 20, Math.max(20, d.y + Math.sin(ang) * 60));
+      }
+    }
+  }
+  cv.addEventListener("touchstart", e => { tapAt(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+  cv.addEventListener("mousedown", e => tapAt(e.clientX, e.clientY));
+
+  function win() {
+    running = false;
+    ok(fb, `¡${GOAL} calcetines a salvo! Aria y Floky, a dieta. 🐕🐶`);
+    setTimeout(next, 1200);
+  }
+  function lose() {
+    eaten = 0; saved = 0;
+    socks.length = 0; spawnSock(); spawnSock();
+    fb.className = "feedback bad";
+    fb.textContent = randItem([
+      "Tres calcetines menos. La lavadora llora. 🧦",
+      "Aria y Floky: 3 — Tú: 0. Otra vez.",
+      "Se los han zampado. ¡Más rápido con ese dedo!",
+    ]);
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    if (!running || current !== screens.indexOf(screenDogs)) return;
+    const dt = Math.min(32, now - last); last = now;
+
+    // van apareciendo calcetines (máximo 4 a la vez)
+    spawnTimer += dt;
+    if (spawnTimer > 1400 && socks.length < 4) { spawnTimer = 0; spawnSock(); }
+
+    // los perros persiguen el calcetín más cercano, y cada vez corren más
+    const boost = 1 + Math.min(0.8, saved * 0.07);
+    for (const d of dogs) {
+      if (now < d.stun || !socks.length) continue;
+      let tgt = socks[0], best = Infinity;
+      for (const sk of socks) { const dd = dist(d, sk); if (dd < best) { best = dd; tgt = sk; } }
+      const dx = tgt.x - d.x, dy = tgt.y - d.y, dd = Math.hypot(dx, dy) || 1;
+      d.x += dx / dd * d.speed * boost * (dt / 16);
+      d.y += dy / dd * d.speed * boost * (dt / 16);
+      if (dd < d.r + tgt.r - 6) {
+        pops.push({ x: tgt.x, y: tgt.y, e: "😋", t: now }); // ñam
+        socks.splice(socks.indexOf(tgt), 1);
+        eaten++;
+        if (eaten >= MAX_EATEN) lose();
+      }
+    }
+
+    draw(now);
+    requestAnimationFrame(loop);
+  }
+
+  function emoji(x, y, size, ch) {
+    ctx.font = size + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(ch, x, y + 1);
+  }
+
+  function draw(now) {
+    // suelo del salón
+    ctx.fillStyle = "#3a2630"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(255,255,255,.04)";
+    for (let y = 0; y < H; y += 24) ctx.fillRect(0, y, W, 12);
+
+    // calcetines (se menean para tentar)
+    socks.forEach(sk => emoji(sk.x, sk.y + Math.sin(now / 250 + sk.x) * 2, 30, "🧦"));
+
+    // perros (trotan; aturdidos ven estrellitas)
+    dogs.forEach(d => {
+      const hop = now < d.stun ? 0 : Math.abs(Math.sin(now / 130 + d.x)) * 3;
+      emoji(d.x, d.y - hop, 38, d.e);
+      ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.font = "11px serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(d.name, d.x, d.y + 18);
+      if (now < d.stun) emoji(d.x + 16, d.y - 24, 14, "💫");
+    });
+
+    // efectos flotantes
+    for (let i = pops.length - 1; i >= 0; i--) {
+      const p = pops[i], age = now - p.t;
+      if (age > 700) { pops.splice(i, 1); continue; }
+      ctx.globalAlpha = 1 - age / 700;
+      emoji(p.x, p.y - age / 24, 24, p.e);
+      ctx.globalAlpha = 1;
+    }
+
+    // HUD
+    ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "13px serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillText(`Salvados: ${saved}/${GOAL}   Comidos: ${eaten}/${MAX_EATEN}`, 8, 8);
+  }
+
+  requestAnimationFrame(loop);
 }
 
 /* =========================================================
