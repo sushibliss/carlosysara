@@ -180,6 +180,16 @@ function screenPuzzle() {
   board.className = "puzzle";
   s.appendChild(board);
 
+  // contador de movimientos + chuleta
+  const bar = document.createElement("div");
+  bar.className = "pz-bar";
+  const movesEl = document.createElement("span");
+  movesEl.className = "pz-moves"; movesEl.textContent = "Movimientos: 0";
+  const peekBtn = document.createElement("button");
+  peekBtn.className = "btn ghost pz-peek"; peekBtn.textContent = "🫣 Chuleta";
+  bar.appendChild(movesEl); bar.appendChild(peekBtn);
+  s.appendChild(bar);
+
   const fb = feedbackEl(s);
 
   // 3x3: posiciones 0..8. background-position por pieza.
@@ -188,21 +198,38 @@ function screenPuzzle() {
   do { shuffle(order); } while (order.every((v, i) => v === i));
 
   let selected = null;
+  let moves = 0;
+  let solved = false;
+  let imgOk = true;
   const pieces = [];
+
+  const pullas = [
+    [12, "Doce movimientos… el novio sigue descuartizado."],
+    [20, "¿Seguro que lo reconoces? Es el de la boda."],
+    [30, "La novia ya está mirando otros candidatos."],
+  ];
 
   function bgPos(idx) {
     const c = idx % 3, r = Math.floor(idx / 3);
     return `${(c / 2) * 100}% ${(r / 2) * 100}%`;
   }
 
-  function render() {
+  function render(popSlots = []) {
     board.innerHTML = "";
     order.forEach((pieceIdx, slot) => {
       const d = document.createElement("div");
       d.className = "pz-piece";
-      d.style.backgroundImage = `url("${CONFIG.assets.novio}")`;
-      d.style.backgroundPosition = bgPos(pieceIdx);
+      if (imgOk) {
+        d.style.backgroundImage = `url("${CONFIG.assets.novio}")`;
+        d.style.backgroundPosition = bgPos(pieceIdx);
+      } else {
+        d.style.display = "flex"; d.style.alignItems = "center"; d.style.justifyContent = "center";
+        d.style.fontSize = "28px"; d.style.color = "#8a6470";
+        d.textContent = pieceIdx + 1;
+      }
+      if (pieceIdx === slot) d.classList.add("placed");   // pieza en su sitio
       if (selected === slot) d.classList.add("sel");
+      if (popSlots.includes(slot)) d.classList.add("pop"); // animación al intercambiar
       d.onclick = () => pick(slot);
       board.appendChild(d);
       pieces[slot] = d;
@@ -210,30 +237,64 @@ function screenPuzzle() {
   }
 
   function pick(slot) {
+    if (solved) return;
     if (selected === null) { selected = slot; render(); return; }
     if (selected === slot) { selected = null; render(); return; }
-    [order[selected], order[slot]] = [order[slot], order[selected]];
+    const a = selected, b = slot;
+    [order[a], order[b]] = [order[b], order[a]];
     selected = null;
-    render();
+    moves++;
+    movesEl.textContent = "Movimientos: " + moves;
+    const pulla = pullas.find(p => p[0] === moves);
+    if (pulla) { fb.className = "feedback bad"; fb.textContent = pulla[1]; }
+    render([a, b]);
     if (order.every((v, i) => v === i)) {
-      ok(fb, "¡Galán recompuesto! 🧩");
-      setTimeout(next, 900);
+      solved = true;
+      board.classList.add("pz-solved");
+      ok(fb, `¡Galán recompuesto en ${moves} movimientos! 🧩`);
+      burstHearts(board);
+      setTimeout(next, 1600);
     }
   }
 
+  // chuleta: mantener pulsado para ver la foto entera
+  let peeking = false;
+  function setPeek(on) {
+    if (solved || !imgOk) return;
+    peeking = on;
+    board.classList.toggle("pz-peeking", on);
+    pieces.forEach((d, slot) => { if (d) d.style.backgroundPosition = bgPos(on ? slot : order[slot]); });
+  }
+  peekBtn.addEventListener("mousedown", () => setPeek(true));
+  peekBtn.addEventListener("touchstart", e => { setPeek(true); e.preventDefault(); }, { passive: false });
+  ["mouseup", "mouseleave"].forEach(ev => peekBtn.addEventListener(ev, () => setPeek(false)));
+  peekBtn.addEventListener("touchend", () => setPeek(false));
+
   // fallback si la imagen no existe: numeritos para poder probar
   const test = new Image();
-  test.onerror = () => {
-    pieces.forEach((p, slot) => {
-      p.style.backgroundImage = "none";
-      p.style.display = "flex"; p.style.alignItems = "center"; p.style.justifyContent = "center";
-      p.style.fontSize = "28px"; p.style.color = "#7a6a52";
-      p.textContent = order[slot] + 1;
-    });
-  };
+  test.onerror = () => { imgOk = false; render(); };
   test.src = CONFIG.assets.novio;
 
   render();
+}
+
+// pequeña explosión de corazones sobre un elemento (celebración)
+function burstHearts(el) {
+  const rect = el.getBoundingClientRect();
+  for (let i = 0; i < 18; i++) {
+    const h = document.createElement("div");
+    h.className = "burst-heart";
+    h.textContent = randItem(["❤️", "💖", "💛", "🤍", "💍", "🎉"]);
+    h.style.left = (rect.left + rect.width / 2) + "px";
+    h.style.top = (rect.top + rect.height / 2) + "px";
+    document.body.appendChild(h);
+    const ang = Math.random() * Math.PI * 2, d = 70 + Math.random() * 130;
+    h.animate([
+      { transform: "translate(0,0) scale(.6)", opacity: 1 },
+      { transform: `translate(${Math.cos(ang) * d}px, ${Math.sin(ang) * d - 40}px) scale(${1 + Math.random()})`, opacity: 0 },
+    ], { duration: 900 + Math.random() * 600, easing: "cubic-bezier(.2,.7,.4,1)", fill: "forwards" });
+    setTimeout(() => h.remove(), 1600);
+  }
 }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
 
@@ -416,7 +477,16 @@ function screenObstacles() {
   s.appendChild(wrap);
   const fb = feedbackEl(s);
 
-  // fotos opcionales
+  // la cara de la novia empeora con cada copa
+  const drunkEmojis = ["🥴", "🤪", "😵‍💫", "🤢", "🤮"];
+  // fotos por nivel de borrachera: assets/novia1.png (sobria) … novia5.png (fatal).
+  // Si falta alguna, usa novia.png; si tampoco está, el emoji del nivel.
+  const noviaLevels = Array.from({ length: 5 }, (_, i) => {
+    const im = new Image(); im.__ok = false;
+    im.onload = () => im.__ok = true;
+    im.src = `assets/novia${i + 1}.png`;
+    return im;
+  });
   const imgNovia = new Image(); let hasNovia = false;
   imgNovia.onload = () => hasNovia = true; imgNovia.src = CONFIG.assets.novia;
   const imgSuegro = new Image(); let hasSuegro = false;
@@ -621,19 +691,23 @@ function screenObstacles() {
     });
     ctx.globalAlpha = 1;
 
+    // sprite según nivel: foto del nivel → novia.png → emoji del nivel
+    const lvl = Math.min(drunk, 4);
+    const sprite = noviaLevels[lvl].__ok ? noviaLevels[lvl] : (hasNovia ? imgNovia : null);
+
     // visión doble: un "fantasma" de la novia que baila alrededor
     if (drunk > 0) {
       ctx.globalAlpha = 0.22 + drunk * 0.07;
       const off = 5 + drunk * 3;
       const gx = player.x + Math.sin(t * 0.006) * off, gy = player.y + Math.cos(t * 0.005) * off * 0.7;
-      if (hasNovia) ctx.drawImage(imgNovia, gx - player.r, gy - player.r, player.r * 2, player.r * 2);
-      else emoji(gx, gy, 30, "🥴");
+      if (sprite) ctx.drawImage(sprite, gx - player.r, gy - player.r, player.r * 2, player.r * 2);
+      else emoji(gx, gy, 30, drunkEmojis[lvl]);
       ctx.globalAlpha = 1;
     }
 
-    // jugadora (novia)
-    if (hasNovia) imgCircle(imgNovia, player.x, player.y, player.r);
-    else emoji(player.x, player.y, 30, "🥴");
+    // jugadora (novia): la cara/foto cambia con cada copa
+    if (sprite) imgCircle(sprite, player.x, player.y, player.r);
+    else emoji(player.x, player.y, 30, drunkEmojis[lvl]);
 
     // HUD
     ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.font = "13px serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
@@ -1043,32 +1117,67 @@ function shatterScreen() {
   $("#progress").style.display = "none";
   $("#skipBtn").style.display = "none";
 
+  // FASE 0: fogonazo blanco, como si estallara algo
+  const flash = document.createElement("div");
+  flash.className = "flash";
+  document.body.appendChild(flash);
+  flash.animate([
+    { opacity: 0 }, { opacity: .95, offset: .12 }, { opacity: 0 },
+  ], { duration: 750, easing: "ease-out", fill: "forwards" });
+  setTimeout(() => flash.remove(), 850);
+
   // FASE 1: la pantalla se congela, se vuelve blanco y negro y tiembla (se agrieta)
   void layer.offsetWidth; // fuerza reflow para que la transición del filtro arranque
   setTimeout(() => {
     shards.forEach(s => { s.el.style.filter = "grayscale(1) contrast(1.08) brightness(.96)"; });
   }, 40);
-  layer.style.animation = "screenShake .5s ease-in-out 2"; // ~1s temblando
+  layer.style.animation = "screenShake .45s ease-in-out 3"; // ~1,4s temblando, cada vez peor
 
-  // FASE 2: pasado ~1,2s, los trozos caen despacio y en cascada
-  const FALL_START = 1200;
+  // FASE 2: los trozos caen despacio, en cascada y girando en 3D
+  const FALL_START = 1500;
   setTimeout(() => {
     shards.forEach(({ el, r }) => {
       const dx = (Math.random() * 2 - 1) * 180;
       const rot = (Math.random() * 2 - 1) * 200;
+      const rx3 = (Math.random() * 2 - 1) * 80;        // vuelco 3D
+      const ry3 = (Math.random() * 2 - 1) * 80;
       const delay = (r * 130) + Math.random() * 160;   // cascada de arriba a abajo
       const dur = 2600 + Math.random() * 1500;          // MUCHO más lento
       el.animate([
-        { transform: "translate(0,0) rotate(0) scale(1)", opacity: 1, offset: 0 },
-        { transform: `translate(${dx * .3}px, 14px) rotate(${rot * .12}deg) scale(1)`, opacity: 1, offset: .12 },
-        { transform: `translate(${dx * .6}px, ${vh * .34}px) rotate(${rot * .5}deg) scale(.97)`, opacity: 1, offset: .6 },
-        { transform: `translate(${dx}px, ${vh + 260}px) rotate(${rot}deg) scale(.82)`, opacity: 0, offset: 1 },
+        { transform: "perspective(700px) translate(0,0) rotate(0) rotateX(0) rotateY(0) scale(1)", opacity: 1, offset: 0 },
+        { transform: `perspective(700px) translate(${dx * .3}px, 14px) rotate(${rot * .12}deg) rotateX(${rx3 * .2}deg) rotateY(${ry3 * .2}deg)`, opacity: 1, offset: .12 },
+        { transform: `perspective(700px) translate(${dx * .6}px, ${vh * .34}px) rotate(${rot * .5}deg) rotateX(${rx3 * .6}deg) rotateY(${ry3 * .6}deg) scale(.97)`, opacity: 1, offset: .6 },
+        { transform: `perspective(700px) translate(${dx}px, ${vh + 260}px) rotate(${rot}deg) rotateX(${rx3}deg) rotateY(${ry3}deg) scale(.8)`, opacity: 0, offset: 1 },
       ], { duration: dur, delay, easing: "cubic-bezier(.4,.02,.5,1)", fill: "forwards" });
     });
   }, FALL_START);
 
+  // FASE 3: lluvia de corazones sobre la cuenta atrás recién descubierta
+  setTimeout(() => rainHearts(4500), FALL_START + 1100);
+
   // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
   setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; }, FALL_START + rows * 130 + 4300);
+}
+
+// lluvia de corazones (celebración sobre la cuenta atrás)
+function rainHearts(ms) {
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:35;overflow:hidden";
+  document.body.appendChild(box);
+  const startT = Date.now();
+  (function spawn() {
+    if (Date.now() - startT > ms) { setTimeout(() => box.remove(), 4600); return; }
+    const h = document.createElement("div");
+    h.textContent = randItem(["❤️", "💖", "🤍", "💛", "🌹", "💍", "🎉"]);
+    h.style.cssText = `position:absolute;top:-34px;left:${Math.random() * 100}%;font-size:${14 + Math.random() * 22}px`;
+    box.appendChild(h);
+    h.animate([
+      { transform: "translateY(0) rotate(0)", opacity: 1 },
+      { transform: `translateY(${window.innerHeight + 70}px) rotate(${(Math.random() * 2 - 1) * 180}deg)`, opacity: .85 },
+    ], { duration: 2600 + Math.random() * 1900, easing: "linear", fill: "forwards" });
+    setTimeout(() => h.remove(), 4600);
+    setTimeout(spawn, 85);
+  })();
 }
 
 function showFinal() {
