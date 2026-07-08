@@ -281,26 +281,15 @@ input[type=range] { width: 100%; height: 30px; accent-color: var(--accent); }
 .key.present { background: #d4a373; color: #fff; }
 .key.absent  { background: #9c8289; color: #fff; }
 
-/* ============ ROTURA DE PANTALLA ============ */
-.shatter { position: fixed; inset: 0; z-index: 60; pointer-events: none; display: none; }
-.shard { position: absolute; }
-.flash { position: fixed; inset: 0; background: #fff; z-index: 70; pointer-events: none; opacity: 0; }
-@keyframes screenShake {
-  0%, 100% { transform: translate(0, 0); }
-  15% { transform: translate(-4px, 2px) rotate(-.3deg); }
-  30% { transform: translate(5px, -2px) rotate(.3deg); }
-  45% { transform: translate(-5px, 3px) rotate(-.2deg); }
-  60% { transform: translate(4px, -1px) rotate(.2deg); }
-  75% { transform: translate(-3px, 2px); }
-}
-
 /* ============ INTERLUDIO (outro limpia) ============ */
 .interlude {
   position: fixed; inset: 0; z-index: 40;
   background: radial-gradient(120% 80% at 50% -10%, #fdf6f3 0%, var(--bg) 55%, var(--bg2) 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 14px; text-align: center;
+  animation: interludeIn 2s ease;
 }
+@keyframes interludeIn { from { opacity: 0; } to { opacity: 1; } }
 .il-glow {
   width: 58vmin; height: 58vmin; border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(212,163,115,.28) 52%, transparent 72%);

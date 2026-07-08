@@ -1202,14 +1202,23 @@ function screenWordle() {
 }
 
 /* =========================================================
-   FINAL — la pantalla se cae a trozos y aparece la cuenta atrás
+   FINAL — fundido limpio al color del fondo, resplandor,
+   lluvia de corazones y cuenta atrás con la canción
    ========================================================= */
 function finishGame() {
   setProgress();
-  // 1) los trozos caen (sin temblor) y descubren un fondo limpio con un resplandor
+
+  // 1) el juego se desvanece y aparece (en fundido) el interludio con el resplandor
   showInterlude();
-  shatterScreen();
-  // 2) fundido LENTO hacia la cuenta atrás; la canción y la letra entran después
+  game.style.transition = "opacity 1.5s ease";
+  game.style.opacity = 0;
+  $("#progress").style.display = "none";
+  $("#skipBtn").style.display = "none";
+
+  // 2) lluvia de corazones durante el interludio (se mantiene)
+  setTimeout(() => rainHearts(9000), 900);
+
+  // 3) fundido LENTO hacia la cuenta atrás; la canción y la letra entran después
   setTimeout(() => {
     showFinal();
     const il = $(".interlude");
@@ -1218,7 +1227,7 @@ function finishGame() {
       il.style.opacity = "0";
       setTimeout(() => il.remove(), 2600);
     }
-  }, 7000);
+  }, 6000);
 }
 
 // interludio: pantalla del color del fondo con un resplandor suave (sin nombres ni emojis)
@@ -1227,108 +1236,6 @@ function showInterlude() {
   il.className = "interlude";
   il.innerHTML = `<div class="il-glow"></div>`;
   document.body.appendChild(il);
-}
-
-function shatterScreen() {
-  const layer = $("#shatter");
-  // en móvil (iPhone, etc.) el efecto completo agota la memoria de Safari y deja
-  // la página en blanco: menos trozos, sin 3D y con el filtro en la capa (1 vez)
-  const isMobile = Math.min(window.innerWidth, window.innerHeight) < 600
-    || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const cols = isMobile ? 5 : 8, rows = isMobile ? 8 : 12;
-
-  try {
-    layer.style.display = "block";
-    layer.innerHTML = "";
-    layer.style.animation = "none";
-    // el blanco y negro se aplica UNA vez a la capa entera (no por trozo)
-    layer.style.filter = "grayscale(0) contrast(1) brightness(1)";
-    layer.style.transition = "filter 1s ease";
-
-    // troceamos la PANTALLA TAL Y COMO ESTÁ (clonando el contenido del juego)
-    const rect = game.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const tw = rect.width / cols, th = rect.height / rows;
-    const pageBg = getComputedStyle(document.body).backgroundColor || "#f6efe2";
-
-    const shards = [];
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      const shard = document.createElement("div");
-      shard.className = "shard";
-      shard.style.left = (rect.left + c * tw) + "px";
-      shard.style.top = (rect.top + r * th) + "px";
-      shard.style.width = (tw + 1) + "px";
-      shard.style.height = (th + 1) + "px";
-      shard.style.overflow = "hidden";
-      shard.style.background = pageBg;
-      shard.style.boxShadow = "0 0 0 1px rgba(0,0,0,.14), 0 6px 16px rgba(0,0,0,.18)";
-
-      // clon del juego, recolocado para que cada trozo muestre su porción
-      const clone = game.cloneNode(true);
-      clone.style.position = "absolute";
-      clone.style.left = (-(c * tw)) + "px";
-      clone.style.top = (-(r * th)) + "px";
-      clone.style.width = rect.width + "px";
-      clone.style.height = rect.height + "px";
-      clone.style.maxWidth = "none";
-      clone.style.margin = "0";
-      clone.style.opacity = "1";
-      clone.style.boxSizing = "border-box";
-      shard.appendChild(clone);
-      layer.appendChild(shard);
-      shards.push({ el: shard, r, c });
-    }
-    // ocultar el juego de fondo
-    game.style.opacity = 0;
-    $("#progress").style.display = "none";
-    $("#skipBtn").style.display = "none";
-
-    // FASE 0: fogonazo blanco, como si estallara algo
-    const flash = document.createElement("div");
-    flash.className = "flash";
-    document.body.appendChild(flash);
-    flash.animate([
-      { opacity: 0 }, { opacity: .95, offset: .12 }, { opacity: 0 },
-    ], { duration: 750, easing: "ease-out", fill: "forwards" });
-    setTimeout(() => flash.remove(), 850);
-
-    // FASE 1: la pantalla se congela y se vuelve blanco y negro (sin temblor)
-    void layer.offsetWidth; // fuerza reflow para que la transición del filtro arranque
-    setTimeout(() => { layer.style.filter = "grayscale(1) contrast(1.08) brightness(.96)"; }, 40);
-
-    // FASE 2: los trozos caen despacio y en cascada (3D solo en escritorio)
-    const FALL_START = 900;
-    setTimeout(() => {
-      shards.forEach(({ el, r }) => {
-        const dx = (Math.random() * 2 - 1) * 180;
-        const rot = (Math.random() * 2 - 1) * 200;
-        const rx3 = (Math.random() * 2 - 1) * 80;        // vuelco 3D
-        const ry3 = (Math.random() * 2 - 1) * 80;
-        const delay = (r * 130) + Math.random() * 160;   // cascada de arriba a abajo
-        const dur = 2600 + Math.random() * 1500;          // MUCHO más lento
-        const p3 = (rx, ry) => isMobile ? "" : ` rotateX(${rx}deg) rotateY(${ry}deg)`;
-        const pre = isMobile ? "" : "perspective(700px) ";
-        el.animate([
-          { transform: `${pre}translate(0,0) rotate(0)${p3(0, 0)} scale(1)`, opacity: 1, offset: 0 },
-          { transform: `${pre}translate(${dx * .3}px, 14px) rotate(${rot * .12}deg)${p3(rx3 * .2, ry3 * .2)}`, opacity: 1, offset: .12 },
-          { transform: `${pre}translate(${dx * .6}px, ${vh * .34}px) rotate(${rot * .5}deg)${p3(rx3 * .6, ry3 * .6)} scale(.97)`, opacity: 1, offset: .6 },
-          { transform: `${pre}translate(${dx}px, ${vh + 260}px) rotate(${rot}deg)${p3(rx3, ry3)} scale(.8)`, opacity: 0, offset: 1 },
-        ], { duration: dur, delay, easing: "cubic-bezier(.4,.02,.5,1)", fill: "forwards" });
-      });
-    }, FALL_START);
-
-    // FASE 3: lluvia de corazones mientras caen los trozos y durante el interludio
-    setTimeout(() => rainHearts(9000), FALL_START + 1100);
-
-    // limpia la capa cuando ya han caído todos (fase1 + cascada + caída más larga)
-    setTimeout(() => { layer.style.display = "none"; layer.innerHTML = ""; layer.style.animation = "none"; layer.style.filter = "none"; }, FALL_START + rows * 130 + 4300);
-  } catch (err) {
-    // si algo falla, fuera efecto: la cuenta atrás ya está detrás y debe verse
-    layer.style.display = "none"; layer.innerHTML = "";
-    game.style.opacity = 0;
-    $("#progress").style.display = "none";
-    $("#skipBtn").style.display = "none";
-  }
 }
 
 // lluvia de corazones (celebración sobre la cuenta atrás)
