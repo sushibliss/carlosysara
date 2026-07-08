@@ -647,6 +647,8 @@ function screenObstacles() {
   }
 
   function emoji(x, y, size, ch) {
+    // fillStyle OPACO siempre: en Android el alpha del último fillStyle tiñe los emoji
+    ctx.fillStyle = "#000";
     ctx.font = size + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(ch, x, y + 1);
   }
@@ -917,6 +919,7 @@ function screenPong() {
     drawCourt();
     // regalos de boda (flotan un poco)
     obs.forEach(o => {
+      ctx.fillStyle = "#000"; // opaco: en Android el alpha del fillStyle tiñe los emoji
       ctx.font = (o.r * 2.1) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText(o.e, o.x, o.y + Math.sin(Date.now() / 300 + o.x) * 2);
     });
@@ -926,6 +929,7 @@ function screenPong() {
     // bola = anillo 💍
     ctx.save();
     ctx.translate(ball.x, ball.y); ctx.rotate(ball.ang);
+    ctx.fillStyle = "#000"; // opaco: en Android el alpha del fillStyle tiñe los emoji
     ctx.font = (ball.r * 2.4) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("💍", 0, 1);
     ctx.restore();
@@ -1046,6 +1050,8 @@ function screenDogs() {
   }
 
   function emoji(x, y, size, ch) {
+    // fillStyle OPACO siempre: en Android el alpha del último fillStyle tiñe los emoji
+    ctx.fillStyle = "#000";
     ctx.font = size + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(ch, x, y + 1);
   }
