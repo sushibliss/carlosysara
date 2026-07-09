@@ -218,7 +218,7 @@ const COPY = {
       "CARLOS",
       "que provocador",
       "con pollos y entre las piernas",
-      "hay debe haber un pollon",
+      "ahí debe haber un pollon",
       "",
       "Paris bien vale una boda",
       "vamos todos a brindar",
