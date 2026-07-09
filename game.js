@@ -12,7 +12,6 @@ const CONFIG = {
   assets: {
     novio:   "assets/novio.jpg",   // portada + puzzle
     cigarro: "assets/Cigarro.png", // foto de cigarro real
-    pollos:  ["assets/pollo1.png", "assets/pollo2.png", "assets/pollo3.png", "assets/pollo4.png", "assets/pollo5.png", "assets/pollo6.png"],
     novia:   "assets/novia.png",   // laberinto
     suegro:  "assets/suegro.png",  // laberinto
     cancion: "assets/cancion.mp3", // canción final de los novios
@@ -62,7 +61,6 @@ const screens = [
   screenWelcome,   // portada
   screenPuzzle,    // 1
   screenCigarro,   // 2
-  screenPollos,    // 3
   screenDistancia, // 4
   screenPong,      // 5
   screenDogs,      // 6 — Aria y Floky contra los calcetines
@@ -378,84 +376,6 @@ function screenCigarro() {
       fail(fb);
     }
   };
-}
-
-/* =========================================================
-   P3 — SEXADOR DE POLLOS (respuestas aleatorias)
-   ========================================================= */
-function screenPollos() {
-  const s = makeScreen();
-  const TOTAL = 6;
-  s.innerHTML = `<p class="kicker">${COPY.pollos.kicker}</p><h2>${COPY.pollos.titulo}</h2>
-    <p class="hint">${fmt(COPY.pollos.texto, { total: TOTAL })}</p>`;
-
-  let idx = 0;
-  let truth = makeTruth();           // verdad aleatoria, se regenera al fallar
-  function makeTruth() { return Array.from({ length: TOTAL }, () => (Math.random() < 0.5 ? "M" : "H")); }
-
-  // puntitos de progreso
-  const dots = document.createElement("div");
-  dots.className = "pollo-dots";
-  s.appendChild(dots);
-
-  const card = document.createElement("div");
-  card.className = "card pollo-card";
-  s.appendChild(card);
-
-  const fb = feedbackEl(s);
-
-  function renderDots() {
-    dots.innerHTML = "";
-    for (let i = 0; i < TOTAL; i++) {
-      const d = document.createElement("span");
-      d.className = "pollo-dot" + (i < idx ? " done" : (i === idx ? " now" : ""));
-      d.textContent = i < idx ? "🥚" : "•";
-      dots.appendChild(d);
-    }
-  }
-
-  function renderPollo() {
-    renderDots();
-    card.innerHTML = "";
-    const label = document.createElement("p");
-    label.className = "tiny"; label.textContent = fmt(COPY.pollos.contador, { n: idx + 1, total: TOTAL });
-    card.appendChild(label);
-
-    const pic = imgOr(CONFIG.assets.pollos[idx], "Pollo " + (idx + 1), "🐔", "pollo-pic");
-    if (pic.tagName === "IMG") pic.classList.add("pollo-pic");
-    card.appendChild(pic);
-
-    const btns = document.createElement("div");
-    btns.className = "sexbtns";
-    [["M", COPY.pollos.macho], ["H", COPY.pollos.hembra]].forEach(([v, txt]) => {
-      const b = document.createElement("button");
-      b.textContent = txt;
-      b.onclick = () => answer(v);
-      btns.appendChild(b);
-    });
-    card.appendChild(btns);
-  }
-
-  function answer(v) {
-    if (v === truth[idx]) {
-      idx++;
-      if (idx >= TOTAL) {
-        renderDots();
-        ok(fb, COPY.pollos.exito);
-        setTimeout(next, 1000);
-      } else {
-        ok(fb, COPY.pollos.acierto);
-        setTimeout(() => { fb.textContent = ""; fb.className = "feedback"; renderPollo(); }, 500);
-      }
-    } else {
-      // fallo: vuelta al principio con nueva lotería
-      idx = 0; truth = makeTruth();
-      fail(fb);
-      setTimeout(renderPollo, 700);
-    }
-  }
-
-  renderPollo();
 }
 
 /* =========================================================

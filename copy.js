@@ -25,13 +25,13 @@ const COPY = {
   portada: {
     kicker: "Concurso pre-boda",
     titulo: "El soltero en peligro de extinción",
-    texto: "8 pruebas te separan de tu destino. Falla y la novia tomará nota. Suerte (la vas a necesitar).",
+    texto: "7 pruebas te separan de tu destino. Falla y la novia tomará nota. Suerte (la vas a necesitar).",
     boton: "Empezar 💍",
   },
 
   /* ---------- prueba 1: puzzle ---------- */
   puzzle: {
-    kicker: "Prueba 1 de 8",
+    kicker: "Prueba 1 de 7",
     titulo: "Recompón al galán",
     texto: "Toca dos piezas para intercambiarlas. Reconstruye la foto del novio… si te atreves.",
     movimientos: "Movimientos: ",
@@ -47,7 +47,7 @@ const COPY = {
 
   /* ---------- prueba 2: cigarro ---------- */
   cigarro: {
-    kicker: "Prueba 2 de 8",
+    kicker: "Prueba 2 de 7",
     titulo: "El Winston de la verdad",
     texto: "Estira o encoge el cigarro hasta que mida lo que mide un Winston largo. Sin reglas trampa.",
     mide: "Mide:",
@@ -55,21 +55,9 @@ const COPY = {
     exito: "¡Exacto! 10 cm de pura elegancia rural. 🚬",
   },
 
-  /* ---------- prueba 3: sexador de pollos ---------- */
-  pollos: {
-    kicker: "Prueba 3 de 8",
-    titulo: "Sexador de pollos",
-    texto: "De uno en uno. Acierta los {total} seguidos. Si fallas uno… vuelta al primer pollo. 🐔",
-    contador: "Pollo {n} de {total}",
-    macho: "Macho ♂",
-    hembra: "Hembra ♀",
-    acierto: "¡Bien! Siguiente pollo…",
-    exito: "¡Ojo clínico! Te contratan en la granja. 🐓",
-  },
-
-  /* ---------- prueba 4: distancia ---------- */
+  /* ---------- prueba 3: distancia ---------- */
   distancia: {
-    kicker: "Prueba 4 de 8",
+    kicker: "Prueba 3 de 7",
     titulo: "De Fraga a Viladecans",
     texto: "¿Cuántos kilómetros separan la patria chica del altar? Afina, geógrafo.",
     ayuda: "Desliza para ajustar",
@@ -77,17 +65,17 @@ const COPY = {
     exito: "¡Clavado! 185 km de amor y peajes. 🛣️",
   },
 
-  /* ---------- prueba 5: pong ---------- */
+  /* ---------- prueba 4: pong ---------- */
   pong: {
-    kicker: "Prueba 5 de 8",
+    kicker: "Prueba 4 de 7",
     titulo: "Pong nupcial",
     texto: "Primero a {puntos}. Tú abajo (desliza), la máquina arriba. Ojo: los regalos de boda 🍾💐🎁 desvían el anillo… y tu pala ENCOGE con cada golpe (se recupera al marcar).",
     exito: "¡Reflejos de campeón! 💍",
   },
 
-  /* ---------- prueba 6: Aria y Floky ---------- */
+  /* ---------- prueba 5: Aria y Floky ---------- */
   perros: {
-    kicker: "Prueba 6 de 8",
+    kicker: "Prueba 5 de 7",
     titulo: "¡Los calcetines, no! 🧦",
     texto: "Aria y Floky van a por los calcetines. Toca los calcetines para salvarlos y a los perros para espantarlos. Salva {salvar} antes de que se coman {max}.",
     nombres: ["Aria", "Floky"],
@@ -102,9 +90,9 @@ const COPY = {
     ],
   },
 
-  /* ---------- prueba 7: wordle ---------- */
+  /* ---------- prueba 6: wordle ---------- */
   wordle: {
-    kicker: "Prueba 7 de 8",
+    kicker: "Prueba 6 de 7",
     titulo: "La palabra secreta",
     texto: "5 letras, 6 intentos. Verde = letra y sitio correctos · Amarillo = está pero en otro sitio · Gris = no está.",
     faltanLetras: "Faltan letras, campeón.",
@@ -113,9 +101,9 @@ const COPY = {
     reintentar: "Otra vez 🔁",
   },
 
-  /* ---------- prueba 8: la novia borracha ---------- */
+  /* ---------- prueba 7: la novia borracha ---------- */
   borracha: {
-    kicker: "Prueba 8 de 8 · LA TRACA FINAL",
+    kicker: "Prueba 7 de 7 · LA TRACA FINAL",
     titulo: "Llévala con el suegro 🥴",
     texto: "Toca/arrastra hacia donde quieres ir. La novia va piripi: se tambalea sola. Esquiva obstáculos 🛢️ y enemigos 👵💃🐕🐗… y NI SE TE OCURRA tocar las copas 🍺🍷🥃: cada trago la emborracha más.",
     // al chocar con un obstáculo (se elige uno al azar)
