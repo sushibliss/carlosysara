@@ -1239,9 +1239,14 @@ function showFinal() {
     wrap.appendChild(lyr);
     // velocidad: ~2s por línea → una pasada completa ≈ duración de la canción (3:16)
     inner.style.animationDuration = (COPY.final.letra.length * 2) + "s";
-    // el scroll (y la propia letra) solo aparecen cuando la canción empieza a sonar
-    audio.addEventListener("play", () => { lyr.classList.add("on"); inner.classList.add("rolling"); });
-    audio.addEventListener("pause", () => inner.classList.remove("rolling"));
+    // la letra aparece con el play, y el scroll arranca 1 segundo después de sonar
+    let scrollTimer = null;
+    audio.addEventListener("play", () => {
+      lyr.classList.add("on");
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => inner.classList.add("rolling"), 1000);
+    });
+    audio.addEventListener("pause", () => { clearTimeout(scrollTimer); inner.classList.remove("rolling"); });
   }
 
   // secuencia: 1º cuenta atrás → 2º canción (sola) → 3º letra (con el play)
