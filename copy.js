@@ -137,7 +137,7 @@ const COPY = {
       "Resulta que el otro día",
       "después de un buen cebollOoooOon",
       "llegué a Fraga y me encontré",
-      "a Carlos en la Pocion",
+      "a Carlos en la Poción",
       "",
       "Carlos y Sara",
       "Tenis y padel",
